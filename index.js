@@ -1,11 +1,11 @@
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
+const chatClient = require("./client"); // Import the chat client module
 const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-// Welcome route
 app.get("/", (req, res) => {
   res.send("Welcome to EloraChat! Please go to /auth/twitch to authenticate.");
 });
@@ -32,6 +32,7 @@ app.get("/auth/twitch/callback", async (req, res) => {
   }
 
   try {
+    // Exchange the code for an access token
     const tokenResponse = await axios.post(
       "https://id.twitch.tv/oauth2/token",
       null,
@@ -47,9 +48,21 @@ app.get("/auth/twitch/callback", async (req, res) => {
     );
 
     const accessToken = tokenResponse.data.access_token;
-    // You now have the access token that you can use to make requests to Twitch's API on behalf of the user.
-    // For now, let's just display a simple message to the user.
-    res.send("You are successfully authenticated! Token: " + accessToken);
+
+    // Use the access token to get the user's Twitch username
+    const userResponse = await axios.get("https://api.twitch.tv/helix/users", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Client-ID": process.env.TWITCH_CLIENT_ID,
+      },
+    });
+
+    const username = userResponse.data.data[0].login;
+
+    // Start the chat client with the username and access token
+    chatClient.startChatClient(username, accessToken);
+
+    res.send("You are successfully authenticated!");
   } catch (error) {
     console.error(
       "Error during the authentication process: ",
