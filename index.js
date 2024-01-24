@@ -2,22 +2,22 @@ require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const chatClient = require("./client"); // Import the chat client module
-const db = require("./db"); // Import the db module
+//const db = require("./db"); // Import the db module
 const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-db.connectToServer(function (err) {
-  if (err) {
-    console.error(err);
-    process.exit();
-  }
+// db.connectToServer(function (err) {
+//   if (err) {
+//     console.error(err);
+//     process.exit();
+//   }
 
-  // Start the server only after the database connection is ready
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-});
+//   // Start the server only after the database connection is ready
+//   app.listen(PORT, () => {
+//     console.log(`Server running on port ${PORT}`);
+//   });
+// });
 
 app.get("/", (req, res) => {
   res.send("Welcome to EloraChat! Please go to /auth/twitch to authenticate.");
