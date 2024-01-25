@@ -15,21 +15,16 @@ function startChatClient(username, token) {
     channels: [username],
   };
 
-  const client = new tmi.client(opts);
+  const client = new tmi.Client(opts);
 
   client.on("message", (channel, userstate, message, self) => {
-    if (self) {
-      return;
-    } // Ignore messages from the bot itself
-    console.log(`[${channel}] ${userstate["display-name"]}: ${message}`);
+    if (self) return; // Ignore messages from the bot itself
+
+    // Handle incoming messages here
+    console.log(`Message from ${userstate["display-name"]}: ${message}`);
   });
 
-  client.on("connected", (addr, port) => {
-    console.log(`* Connected to ${addr}:${port}`);
-  });
-
-  // Connect the client to the server
-  client.connect();
+  client.connect().catch(console.error);
 }
 
-module.exports = { startChatClient };
+module.exports = startChatClient;
