@@ -87,4 +87,19 @@ router.get("/callback", async (req, res) => {
   }
 });
 
+router.get("/test-refresh", async (req, res) => {
+  // Expire the token for testing purposes
+  expireAccessToken();
+
+  // Try to get a valid access token (this should trigger the refresh if expired)
+  try {
+    const accessToken = await getValidAccessToken();
+    console.log("Access Token:", accessToken);
+    res.send("Token refresh test completed. Check logs for details.");
+  } catch (error) {
+    console.error("Error during token refresh test:", error);
+    res.status(500).send("Token refresh test failed.");
+  }
+});
+
 module.exports = router;

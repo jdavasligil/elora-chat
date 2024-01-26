@@ -47,6 +47,10 @@ const refreshToken = async () => {
     const newTokens = response.data;
     tokens.access_token = newTokens.access_token;
     tokens.expiry_date = Date.now() + newTokens.expires_in * 1000;
+
+    // DEBUG
+    console.log("Token refreshed.");
+
     // You may also update the refresh_token if it is returned in the response
   } catch (error) {
     console.error("Error refreshing YouTube token:", error);
@@ -61,8 +65,16 @@ const getValidAccessToken = async () => {
   return tokens.access_token;
 };
 
+// Function to manually expire the current access token for testing
+function expireAccessToken() {
+  if (tokens.expiry_date) {
+    tokens.expiry_date = Date.now() - 1000; // Set to 1 second in the past
+  }
+}
+
 module.exports = {
   getAuthUrl,
   getToken,
   getValidAccessToken,
+  expireAccessToken,
 };
