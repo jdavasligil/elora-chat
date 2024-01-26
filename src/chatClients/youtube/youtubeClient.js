@@ -2,7 +2,7 @@ const axios = require("axios");
 const { getValidAccessToken } = require("../../auth/youtube/youtubeAuth");
 
 const getLiveChatMessages = async (liveChatId, pageToken) => {
-  const accessToken = getValidAccessToken();
+  const accessToken = await getValidAccessToken();
 
   try {
     const response = await axios.get(

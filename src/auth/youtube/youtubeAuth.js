@@ -34,8 +34,30 @@ const getToken = async (code) => {
   }
 };
 
-const getValidAccessToken = () => {
-  // Here you would implement logic to check token expiry and refresh if necessary
+const refreshToken = async () => {
+  const tokenUrl = "https://oauth2.googleapis.com/token";
+  const params = new URLSearchParams();
+  params.append("client_id", YOUTUBE_CLIENT_ID);
+  params.append("client_secret", YOUTUBE_CLIENT_SECRET);
+  params.append("refresh_token", tokens.refresh_token);
+  params.append("grant_type", "refresh_token");
+
+  try {
+    const response = await axios.post(tokenUrl, params);
+    const newTokens = response.data;
+    tokens.access_token = newTokens.access_token;
+    tokens.expiry_date = Date.now() + newTokens.expires_in * 1000;
+    // You may also update the refresh_token if it is returned in the response
+  } catch (error) {
+    console.error("Error refreshing YouTube token:", error);
+    throw error;
+  }
+};
+
+const getValidAccessToken = async () => {
+  if (Date.now() > tokens.expiry_date) {
+    await refreshToken();
+  }
   return tokens.access_token;
 };
 
