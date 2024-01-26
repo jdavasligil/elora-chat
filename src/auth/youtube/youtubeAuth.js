@@ -5,6 +5,9 @@ const YOUTUBE_CLIENT_ID = process.env.YOUTUBE_CLIENT_ID;
 const YOUTUBE_CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET;
 const YOUTUBE_REDIRECT_URI = process.env.YOUTUBE_REDIRECT_URI;
 
+// Placeholder for in-memory token storage (should be replaced with a proper storage solution)
+let tokens = {};
+
 const getAuthUrl = () => {
   const scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"];
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${YOUTUBE_CLIENT_ID}&redirect_uri=${encodeURIComponent(
@@ -24,13 +27,20 @@ const getToken = async (code) => {
 
   try {
     const response = await axios.post(tokenUrl, params);
-    return response.data; // { access_token, refresh_token, expires_in, etc. }
+    tokens = response.data; // Store tokens
+    return tokens;
   } catch (error) {
     throw error;
   }
 };
 
+const getValidAccessToken = () => {
+  // Here you would implement logic to check token expiry and refresh if necessary
+  return tokens.access_token;
+};
+
 module.exports = {
   getAuthUrl,
   getToken,
+  getValidAccessToken,
 };
