@@ -25,6 +25,8 @@ async function getLiveChatId(accessToken) {
       }
     );
 
+    console.log("API Response:", response.data); // Log the full API response
+
     // Check if there are any active broadcasts
     const broadcasts = response.data.items;
     if (!broadcasts || broadcasts.length === 0) {
@@ -44,7 +46,12 @@ async function getLiveChatId(accessToken) {
 
     return liveChatId;
   } catch (error) {
-    console.error("Error fetching liveChatId:", error.response || error);
+    if (error.response) {
+      // Log the full error response from the API
+      console.error("API Error Response:", error.response.data);
+    } else {
+      console.error("Request Error:", error.message);
+    }
     throw error;
   }
 }

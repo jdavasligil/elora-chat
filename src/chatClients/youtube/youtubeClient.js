@@ -45,7 +45,8 @@ const startChatClient = (liveChatId) => {
       pollingIntervalMillis = interval || pollingIntervalMillis;
 
       items.forEach((message) => {
-        const { displayName, messageText } = message.snippet.displayMessage;
+        const displayName = message.authorDetails.displayName;
+        const messageText = message.snippet.displayMessage; // displayMessage is a string
         console.log(`${displayName}: ${messageText}`);
       });
 
