@@ -24,6 +24,29 @@ const getLiveChatMessages = async (liveChatId, pageToken) => {
       }
     );
 
+    // Set polling interval to minimize API calls
+
+    // Extract pollingIntervalMillis from the response
+    const pollingIntervalMillis = response.data.pollingIntervalMillis;
+
+    // Set a minimum polling interval for testing, e.g., 1 second
+    const minimumPollingIntervalMillis = 1 * 1000; // 1 second
+
+    // Use the maximum of the provided polling interval or your minimum
+    const effectivePollingIntervalMillis = Math.max(
+      pollingIntervalMillis,
+      minimumPollingIntervalMillis
+    );
+
+    // DEBUG
+    console.log(effectivePollingIntervalMillis);
+
+    // Use effectivePollingIntervalMillis to set your timeout before the next poll
+    setTimeout(
+      () => getLiveChatMessages(liveChatId, response.data.nextPageToken),
+      effectivePollingIntervalMillis
+    );
+
     return response.data;
   } catch (error) {
     isShuttingDown = true;
