@@ -1,7 +1,10 @@
 const axios = require("axios");
 const { getValidAccessToken } = require("../../auth/youtube/youtubeAuth");
+let isShuttingDown = false;
 
 const getLiveChatMessages = async (liveChatId, pageToken) => {
+  if (isShuttingDown) return;
+
   const accessToken = await getValidAccessToken();
 
   try {
@@ -23,8 +26,16 @@ const getLiveChatMessages = async (liveChatId, pageToken) => {
 
     return response.data;
   } catch (error) {
-    console.error("Error fetching YouTube live chat messages:", error);
-    throw error;
+    isShuttingDown = true;
+    // Graceful shutdown
+    if (error.response && error.response.status === 403) {
+      // Or any other status code that indicates quota problems
+      console.error("API quota error, shutting down YouTube client:", error);
+      // Optionally, set up a timer to attempt to restart after a certain period
+    } else {
+      // Handle other errors
+      console.error("An error occurred:", error);
+    }
   }
 };
 
