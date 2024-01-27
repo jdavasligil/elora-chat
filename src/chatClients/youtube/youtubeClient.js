@@ -1,10 +1,7 @@
 const axios = require("axios");
 const { getValidAccessToken } = require("../../auth/youtube/youtubeAuth");
-let isShuttingDown = false;
 
 const getLiveChatMessages = async (liveChatId, pageToken) => {
-  if (isShuttingDown) return;
-
   const accessToken = await getValidAccessToken();
 
   try {
@@ -24,73 +21,47 @@ const getLiveChatMessages = async (liveChatId, pageToken) => {
       }
     );
 
-    // Set polling interval to minimize API calls
-
-    // Extract pollingIntervalMillis from the response
-    const pollingIntervalMillis = response.data.pollingIntervalMillis;
-
-    // Set a minimum polling interval for testing, e.g., 1 second
-    const minimumPollingIntervalMillis = 1 * 1000; // 1 second
-
-    // Use the maximum of the provided polling interval or your minimum
-    const effectivePollingIntervalMillis = Math.max(
-      pollingIntervalMillis,
-      minimumPollingIntervalMillis
-    );
-
-    // DEBUG
-    console.log(effectivePollingIntervalMillis);
-
-    // Use effectivePollingIntervalMillis to set your timeout before the next poll
-    setTimeout(
-      () => getLiveChatMessages(liveChatId, response.data.nextPageToken),
-      effectivePollingIntervalMillis
-    );
-
     return response.data;
   } catch (error) {
-    isShuttingDown = true;
-    // Graceful shutdown
-    if (error.response && error.response.status === 403) {
-      // Or any other status code that indicates quota problems
-      console.error("API quota error, shutting down YouTube client:", error);
-      // Optionally, set up a timer to attempt to restart after a certain period
-    } else {
-      // Handle other errors
-      console.error("An error occurred:", error);
-    }
+    console.error(
+      "An error occurred while fetching YouTube live chat messages:",
+      error
+    );
+    throw error;
   }
 };
 
 const startChatClient = (liveChatId) => {
-  let nextPageToken;
-  let pollingIntervalMillis = 10000;
+  let nextPageToken = null;
 
   const pollMessages = async () => {
     try {
       const chatData = await getLiveChatMessages(liveChatId, nextPageToken);
       const {
         items,
-        pollingIntervalMillis: interval,
-        nextPageToken: token,
+        pollingIntervalMillis,
+        nextPageToken: newToken,
       } = chatData;
 
-      nextPageToken = token;
-      pollingIntervalMillis = interval || pollingIntervalMillis;
+      nextPageToken = newToken; // Update the nextPageToken for the next poll
 
+      // Process and log chat messages
       items.forEach((message) => {
         const displayName = message.authorDetails.displayName;
-        const messageText = message.snippet.displayMessage; // displayMessage is a string
+        const messageText = message.snippet.displayMessage;
         console.log(`${displayName}: ${messageText}`);
       });
 
+      // Poll for more messages after the specified interval
       setTimeout(pollMessages, pollingIntervalMillis);
     } catch (error) {
       console.error("Error in pollMessages:", error);
-      setTimeout(pollMessages, pollingIntervalMillis);
+      // Retry the poll after some time if there is an error
+      setTimeout(pollMessages, 10000); // Default to 10 seconds
     }
   };
 
+  // Start polling
   pollMessages();
 };
 
