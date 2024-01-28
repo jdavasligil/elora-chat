@@ -37,7 +37,24 @@ const getValidTwitchAccessToken = async () => {
   return twitchTokens.access_token;
 };
 
+// Function to manually expire the current Twitch access token for testing
+function expireTwitchAccessToken() {
+  if (twitchTokens.expiry_date) {
+    twitchTokens.expiry_date = Date.now() - 1000; // Set to 1 second in the past
+  }
+}
+
+const setTwitchTokens = (tokens) => {
+  twitchTokens = {
+    access_token: tokens.access_token,
+    refresh_token: tokens.refresh_token,
+    expiry_date: tokens.expiry_date,
+  };
+};
+
 module.exports = {
   getValidTwitchAccessToken,
   refreshTwitchToken, // Export this if you want to manually trigger a token refresh for testing
+  expireTwitchAccessToken,
+  setTwitchTokens,
 };

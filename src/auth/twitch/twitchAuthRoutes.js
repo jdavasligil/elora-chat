@@ -1,9 +1,11 @@
 const express = require("express");
 const axios = require("axios");
-const { getValidTwitchAccessToken, setTwitchTokens } = require("./twitchAuth");
 const {
-  startTwitchChatClient,
-} = require("../../chatClients/twitch/twitchClient");
+  getValidTwitchAccessToken,
+  expireTwitchAccessToken, // Make sure to import this function
+  setTwitchTokens,
+} = require("./twitchAuth");
+const startChatClient = require("../../chatClients/twitch/twitchClient");
 require("dotenv").config();
 
 const router = express.Router();
@@ -36,7 +38,7 @@ router.get("/callback", async (req, res) => {
           client_secret: process.env.TWITCH_CLIENT_SECRET,
           code,
           grant_type: "authorization_code",
-          redirect_uri: redirectUri,
+          redirect_uri: process.env.TWITCH_REDIRECT_URI,
         },
       }
     );
@@ -49,12 +51,29 @@ router.get("/callback", async (req, res) => {
     });
 
     // Start the Twitch chat client
-    startTwitchChatClient(await getValidTwitchAccessToken());
+    const twitchUsername = "hp_az"; // Replace with the actual Twitch username
+    startChatClient(twitchUsername, await getValidTwitchAccessToken());
 
     res.send("Twitch Authentication successful!");
   } catch (error) {
     console.error("Error during Twitch authentication:", error);
     res.status(500).send("Twitch Authentication failed");
+  }
+});
+
+// Test route to manually expire and refresh the Twitch token
+router.get("/test-refresh", async (req, res) => {
+  // Manually expire the Twitch token for testing purposes
+  expireTwitchAccessToken();
+
+  // Try to get a valid Twitch access token (this should trigger the refresh if expired)
+  try {
+    const accessToken = await getValidTwitchAccessToken();
+    console.log("Twitch Access Token:", accessToken);
+    res.send("Twitch token refresh test completed. Check logs for details.");
+  } catch (error) {
+    console.error("Error during Twitch token refresh test:", error);
+    res.status(500).send("Twitch token refresh test failed.");
   }
 });
 

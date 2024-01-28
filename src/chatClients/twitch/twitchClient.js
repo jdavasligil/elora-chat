@@ -2,6 +2,7 @@ const tmi = require("tmi.js");
 
 // This function starts a Twitch chat client with the provided username and token
 function startChatClient(username, token) {
+  console.log(username);
   const opts = {
     options: { debug: true },
     connection: {
