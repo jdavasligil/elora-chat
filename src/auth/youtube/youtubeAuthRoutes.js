@@ -1,6 +1,11 @@
 const express = require("express");
 const axios = require("axios");
-const { getAuthUrl, getToken, getValidAccessToken } = require("./youtubeAuth");
+const {
+  getAuthUrl,
+  getToken,
+  getValidAccessToken,
+  expireAccessToken,
+} = require("./youtubeAuth");
 const { startChatClient } = require("../../chatClients/youtube/youtubeClient");
 require("dotenv").config();
 
