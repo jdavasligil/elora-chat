@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/gorilla/mux v1.8.1
+	github.com/joho/godotenv v1.5.1
 	github.com/thoj/go-ircevent v0.0.0-20210723090443-73e444401d64
 )
 
