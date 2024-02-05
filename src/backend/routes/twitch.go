@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/hpwn/EloraChat/src/backend/auth" // Replace with the actual import path of your auth package
+	"github.com/hpwn/EloraChat/src/backend/client"
 
 	"github.com/gorilla/mux"
 )
@@ -23,8 +26,9 @@ func SetupTwitchRoutes(router *mux.Router) {
 func redirectForTwitchAuth(w http.ResponseWriter, r *http.Request) {
 	redirectURI := os.Getenv("TWITCH_REDIRECT_URI")
 	clientID := os.Getenv("TWITCH_CLIENT_ID")
-	scopes := "chat:read+chat:edit"
-	authURL := fmt.Sprintf("https://id.twitch.tv/oauth2/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=%s", clientID, url.QueryEscape(redirectURI), url.QueryEscape(scopes))
+	scopes := []string{"chat:read", "chat:edit"}
+	scopesString := strings.Join(scopes, " ")
+	authURL := fmt.Sprintf("https://id.twitch.tv/oauth2/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=%s", clientID, url.QueryEscape(redirectURI), url.QueryEscape(scopesString))
 	http.Redirect(w, r, authURL, http.StatusTemporaryRedirect)
 }
 
@@ -77,8 +81,22 @@ func twitchAuthCallback(w http.ResponseWriter, r *http.Request) {
 	// Store the tokens and expiry date using the functions from the auth package
 	auth.SetTwitchTokens(tokens.AccessToken, tokens.RefreshToken, tokens.ExpiresIn)
 
+	// Successful authentication, now start the Twitch chat client
+	go startTwitchChatClient(tokens.AccessToken)
+
 	// You would typically redirect to another page here
 	fmt.Fprintln(w, "Twitch Authentication successful!")
+}
+
+func startTwitchChatClient(accessToken string) {
+	twitchUsername := os.Getenv("TWITCH_USERNAME") // Retrieve the username from environment variable
+	if twitchUsername == "" {
+		log.Printf("Twitch username is not set in environment variables")
+		return
+	}
+
+	client.StartChatClient(twitchUsername, accessToken)
+	// Since StartChatClient does not return an error, no error handling is needed here
 }
 
 func testTwitchTokenRefresh(w http.ResponseWriter, r *http.Request) {
