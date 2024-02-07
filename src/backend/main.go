@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/hpwn/EloraChat/src/backend/routes"
+	"github.com/hpwn/EloraChat/src/backend/routes" // Ensure this is the correct path to your routes package
 	"github.com/joho/godotenv"
 )
 
@@ -24,8 +24,11 @@ func main() {
 	// Create a new router
 	r := mux.NewRouter()
 
-	// Set up routes
+	// Set up Twitch routes
 	routes.SetupTwitchRoutes(r)
+
+	// Set up YouTube routes
+	routes.SetupYoutubeRoutes(r) // Add this line to set up YouTube routes
 
 	// Register the helloHandler as a fallback or test route
 	r.HandleFunc("/", helloHandler)
