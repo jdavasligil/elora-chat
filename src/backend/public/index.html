@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Display</title>
+    <!-- Include HTMX -->
+    <script src="https://unpkg.com/htmx.org"></script>
+</head>
+<body>
+
+<h2>Twitch Chat</h2>
+<div id="twitch-chat" hx-get="/twitch" hx-trigger="every 5s" hx-swap="outerHTML">
+    <!-- Initial message or loading indicator -->
+    Loading Twitch chat messages...
+</div>
+
+<h2>YouTube Chat</h2>
+<div id="youtube-chat" hx-get="/youtube" hx-trigger="every 5s" hx-swap="outerHTML">
+    <!-- Initial message or loading indicator -->
+    Loading YouTube chat messages...
+</div>
+
+</body>
+</html>

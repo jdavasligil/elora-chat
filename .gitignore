@@ -40,3 +40,6 @@ Thumbs.db
 *.tgz
 *.swp
 *.swo
+
+# Python virutal environment
+python/venv
