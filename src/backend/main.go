@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -9,10 +8,6 @@ import (
 	"github.com/hpwn/EloraChat/src/backend/routes" // Ensure this is the correct path to your routes package
 	"github.com/joho/godotenv"
 )
-
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, world!")
-}
 
 func main() {
 	// Load environment variables from .env file
@@ -26,9 +21,6 @@ func main() {
 
 	// Register the chat fetching routes
 	routes.SetupChatRoutes(r)
-
-	// Register the helloHandler at a specific path for testing
-	r.HandleFunc("/hello", helloHandler)
 
 	// Serve static files from the "public" directory
 	fs := http.FileServer(http.Dir("public"))
