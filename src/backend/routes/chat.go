@@ -51,7 +51,7 @@ func fetchYoutubeChat(w http.ResponseWriter, r *http.Request) {
 	log.Println("Fetching YouTube chat messages")
 
 	// Command execution setup
-	cmd := exec.Command(pythonExecPath, fetchChatScript, "https://www.youtube.com/watch?v=CyGuL1Wtigo", "youtube")
+	cmd := exec.Command(pythonExecPath, fetchChatScript, "https://www.youtube.com/watch?v=XyIun_e19qU", "youtube")
 
 	var output bytes.Buffer
 	var stderr bytes.Buffer

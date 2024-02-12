@@ -24,12 +24,6 @@ func main() {
 	// Create a new router
 	r := mux.NewRouter()
 
-	// Set up Twitch routes
-	routes.SetupTwitchRoutes(r)
-
-	// Set up YouTube routes
-	routes.SetupYoutubeRoutes(r)
-
 	// Register the chat fetching routes
 	routes.SetupChatRoutes(r)
 

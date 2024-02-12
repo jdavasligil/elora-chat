@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     # Extract platform from URL to determine message_groups
     if "youtube" in url:
-        message_groups = ["superchat"]
+        message_groups = ["messages"]
     elif "twitch" in url:
         message_groups = []
 
