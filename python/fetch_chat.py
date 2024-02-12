@@ -5,15 +5,40 @@ import json
 import sys
 
 
-def fetch_chat(platform, url):
-    chat = ChatDownloader().get_chat(
-        url, max_messages=10
-    )  # Adjust max_messages as needed
-    messages = [message.json() for message in chat]
-    print(json.dumps(messages))  # Print messages as JSON
+def fetch_chat(url, message_groups=None, max_messages=1):
+    try:
+        chat_downloader = ChatDownloader()
+        chat = chat_downloader.get_chat(
+            url=url,
+            message_groups=message_groups or [],
+            max_messages=max_messages,
+        )
+        messages = [message for message in chat]
+        print(json.dumps(messages))  # Print messages as JSON
+    except Exception as e:
+        print(f"Error fetching chat: {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":
-    platform = sys.argv[1]  # 'twitch' or 'youtube'
-    url = sys.argv[2]  # Channel URL
-    fetch_chat(platform, url)
+    url = sys.argv[1]  # Channel URL
+
+    # Default values
+    message_groups = []
+    max_messages = 10
+
+    # Extract platform from URL to determine message_groups
+    if "youtube" in url:
+        message_groups = ["superchat"]
+    elif "twitch" in url:
+        message_groups = []
+
+    # Optionally, parse max_messages from command-line arguments
+    if len(sys.argv) > 2:
+        try:
+            max_messages = int(sys.argv[2])
+        except ValueError:
+            print(
+                "Warning: Invalid max_messages value. Using default.", file=sys.stderr
+            )
+
+    fetch_chat(url, message_groups=message_groups, max_messages=max_messages)
