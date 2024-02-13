@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat Display</title>
-    <script src="https://unpkg.com/htmx.org"></script>
     <style>
       #chat-container {
         height: 500px;
@@ -22,38 +21,29 @@
     <div id="chat-container"></div>
 
     <script>
-      let lastTwitchMessageId = null;
-      let lastYoutubeMessageId = null;
+      const ws = new WebSocket("ws://localhost:8080/ws/chat");
 
-      function fetchChats() {
-        fetch("/twitch")
-          .then((response) => response.text()) // Change this to handle text response
-          .then((html) => {
-            const container = document.getElementById("chat-container");
-            container.innerHTML += html; // Append new messages as HTML
-            container.scrollTop = container.scrollHeight; // Scroll to the bottom
-          })
-          .catch((error) => {
-            console.error("Failed to fetch Twitch chats:", error);
-          });
+      ws.onopen = function () {
+        console.log("WebSocket Connection established");
+      };
 
-        fetch("/youtube")
-          .then((response) => response.text()) // Change this to handle text response
-          .then((html) => {
-            const container = document.getElementById("chat-container");
-            container.innerHTML += html; // Append new messages as HTML
-            container.scrollTop = container.scrollHeight; // Scroll to the bottom
-          })
-          .catch((error) => {
-            console.error("Failed to fetch YouTube chats:", error);
-          });
-      }
+      ws.onmessage = function (event) {
+        const message = JSON.parse(event.data);
+        const container = document.getElementById("chat-container");
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("chat-message");
+        messageElement.innerHTML = `<b>${message.Author}:</b> ${message.Message}`;
+        container.appendChild(messageElement);
+        container.scrollTop = container.scrollHeight; // Scroll to the bottom
+      };
 
-      // Poll every 5 seconds
-      setInterval(fetchChats, 5000);
+      ws.onerror = function (error) {
+        console.log("WebSocket Error: " + error);
+      };
 
-      // Initial fetch
-      fetchChats();
+      ws.onclose = function () {
+        console.log("WebSocket Connection closed");
+      };
     </script>
   </body>
 </html>
