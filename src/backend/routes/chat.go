@@ -1,121 +1,86 @@
-// src/backend/routes/chat.go
-
 package routes
 
 import (
-	"bytes"
+	"bufio"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 )
 
-// Adjust these paths as necessary
-const pythonExecPath = "/mnt/c/Users/hwpDesktop/Documents/Content/Repos/EloraChat/python/venv/bin/python3"
-
-var fetchChatScript = filepath.Join("/mnt/c/Users/hwpDesktop/Documents/Content/Repos/EloraChat/python", "fetch_chat.py")
-
-// fetchTwitchChat fetches chat messages for the Twitch user "Dayoman"
-func fetchTwitchChat(w http.ResponseWriter, r *http.Request) {
-	log.Println("Fetching Twitch chat messages")
-
-	// Command execution setup
-	cmd := exec.Command(pythonExecPath, fetchChatScript, "https://www.twitch.tv/hasanabi", "messages")
-
-	var output bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &output
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	if err != nil {
-		log.Printf("Error fetching Twitch chat messages: %v, STDERR: %s", err, stderr.String())
-		// Handle error by ensuring HTMX attributes are still set for polling
-		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprintf(w, `<div id="twitch-chat" hx-get="/twitch" hx-trigger="every 5s" hx-swap="outerHTML">Error fetching messages. Retrying...</div>`)
-		return
-	}
-
-	// Parse the JSON output from the Python script
-	var messages []map[string]interface{}
-	if err := json.Unmarshal(output.Bytes(), &messages); err != nil {
-		log.Printf("Error parsing Twitch chat messages: %v", err)
-		// Handle error appropriately
-		return
-	}
-
-	// Convert messages to HTML
-	var htmlMessages strings.Builder
-	for _, msg := range messages {
-		if msg["message_type"] == "text_message" {
-			username := msg["author"].(map[string]interface{})["display_name"].(string)
-			message := msg["message"].(string)
-			htmlMessages.WriteString(fmt.Sprintf("<div class='chat-message'><b>Twitch %s:</b> %s</div>",
-				username, message))
-		}
-	}
-
-	// Return the HTML messages with HTMX attributes for the next cycle
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, `<div id="twitch-chat" hx-get="/twitch" hx-trigger="every 5s" hx-swap="outerHTML">`)
-	fmt.Fprint(w, htmlMessages.String())
-	fmt.Fprint(w, "</div>")
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Allow all origins for simplicity; adjust as needed for security
+	},
 }
 
-// fetchYoutubeChat fetches chat messages for the YouTube channel
-func fetchYoutubeChat(w http.ResponseWriter, r *http.Request) {
-	log.Println("Fetching YouTube chat messages")
-
-	// Command execution setup
-	cmd := exec.Command(pythonExecPath, fetchChatScript, "https://www.youtube.com/watch?v=jfKfPfyJRdk", "messages")
-
-	var output bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &output
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	if err != nil {
-		log.Printf("Error fetching YouTube chat messages: %v, STDERR: %s", err, stderr.String())
-		// Handle error by ensuring HTMX attributes are still set for polling
-		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprintf(w, `<div id="youtube-chat" hx-get="/youtube" hx-trigger="every 5s" hx-swap="outerHTML">Error fetching messages. Retrying...</div>`)
-		return
-	}
-
-	// Parse the JSON output from the Python script
-	var messages []map[string]interface{}
-	if err := json.Unmarshal(output.Bytes(), &messages); err != nil {
-		log.Printf("Error parsing YouTube chat messages: %v", err)
-		// Handle error appropriately
-		return
-	}
-
-	// Convert messages to HTML
-	var htmlMessages strings.Builder
-	for _, msg := range messages {
-		if msg["message_type"] == "text_message" {
-			username := msg["author"].(map[string]interface{})["name"].(string)
-			message := msg["message"].(string)
-			htmlMessages.WriteString(fmt.Sprintf("<div class='chat-message'><b>Youtube %s:</b> %s</div>",
-				username, message))
-		}
-	}
-
-	// Return the HTML messages with HTMX attributes for the next cycle
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, `<div id="youtube-chat" hx-get="/youtube" hx-trigger="every 5s" hx-swap="outerHTML">`)
-	fmt.Fprint(w, htmlMessages.String())
-	fmt.Fprint(w, "</div>")
+// Message represents a generic chat message
+type Message struct {
+	Author  string `json:"author"`
+	Message string `json:"message"`
 }
 
-// SetupChatRoutes sets up routes to fetch chat messages from Twitch and YouTube
+// messageChannel is a channel for sending chat messages to WebSocket connections
+var messageChannel = make(chan Message, 10) // Buffered channel
+
+// StartChatFetch starts fetching chat messages for each provided URL
+func StartChatFetch(urls []string) {
+
+	const pythonExecPath = "/mnt/c/Users/hwpDesktop/Documents/Content/Repos/EloraChat/python/venv/bin/python3"
+	var fetchChatScript = filepath.Join("/mnt/c/Users/hwpDesktop/Documents/Content/Repos/EloraChat/python", "fetch_chat.py")
+
+	for _, url := range urls {
+		go func(url string) {
+			cmd := exec.Command(pythonExecPath, fetchChatScript, url)
+
+			stdout, err := cmd.StdoutPipe()
+			if err != nil {
+				log.Fatal("Failed to create stdout pipe:", err)
+			}
+
+			if err := cmd.Start(); err != nil {
+				log.Fatal("Failed to start command:", err)
+			}
+
+			scanner := bufio.NewScanner(stdout)
+			for scanner.Scan() {
+				var msg Message
+				if err := json.Unmarshal(scanner.Bytes(), &msg); err != nil {
+					log.Println("Failed to unmarshal message:", err)
+					continue
+				}
+				messageChannel <- msg
+			}
+
+			if err := scanner.Err(); err != nil {
+				log.Println("Error reading standard output:", err)
+			}
+		}(url)
+	}
+}
+
+// StreamChat initializes a WebSocket connection and streams chat messages
+func StreamChat(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Print("WebSocket upgrade error:", err)
+		return
+	}
+	defer conn.Close()
+
+	for msg := range messageChannel {
+		if err := conn.WriteJSON(msg); err != nil {
+			log.Println("WebSocket write error:", err)
+			break
+		}
+	}
+}
+
+// SetupChatRoutes sets up WebSocket routes
 func SetupChatRoutes(router *mux.Router) {
-	router.HandleFunc("/twitch", fetchTwitchChat).Methods("GET")
-	router.HandleFunc("/youtube", fetchYoutubeChat).Methods("GET")
+	router.HandleFunc("/ws/chat", StreamChat)
 }
