@@ -1,52 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat Display</title>
     <script src="https://unpkg.com/htmx.org"></script>
     <style>
-        #chat-container {
-            height: 500px;
-            overflow-y: scroll;
-            border: 1px solid #ccc;
-            padding: 10px;
-        }
-        .chat-message {
-            margin-bottom: 10px;
-        }
+      #chat-container {
+        height: 500px;
+        overflow-y: scroll;
+        border: 1px solid #ccc;
+        padding: 10px;
+      }
+      .chat-message {
+        margin-bottom: 10px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <h2>Combined Chat</h2>
+    <div id="chat-container"></div>
 
-<h2>Combined Chat</h2>
-<div id="chat-container"></div>
+    <script>
+      let lastTwitchMessageId = null;
+      let lastYoutubeMessageId = null;
 
-<script>
-    function fetchChats() {
-        fetch('/twitch')
-            .then(response => response.text())
-            .then(html => {
-                const container = document.getElementById('chat-container');
-                container.innerHTML += html; // Append new messages
-                container.scrollTop = container.scrollHeight; // Scroll to the bottom
-            });
+      function fetchChats() {
+        fetch("/twitch")
+          .then((response) => response.text()) // Change this to handle text response
+          .then((html) => {
+            const container = document.getElementById("chat-container");
+            container.innerHTML += html; // Append new messages as HTML
+            container.scrollTop = container.scrollHeight; // Scroll to the bottom
+          })
+          .catch((error) => {
+            console.error("Failed to fetch Twitch chats:", error);
+          });
 
-        fetch('/youtube')
-            .then(response => response.text())
-            .then(html => {
-                const container = document.getElementById('chat-container');
-                container.innerHTML += html; // Append new messages
-                container.scrollTop = container.scrollHeight; // Scroll to the bottom
-            });
-    }
+        fetch("/youtube")
+          .then((response) => response.text()) // Change this to handle text response
+          .then((html) => {
+            const container = document.getElementById("chat-container");
+            container.innerHTML += html; // Append new messages as HTML
+            container.scrollTop = container.scrollHeight; // Scroll to the bottom
+          })
+          .catch((error) => {
+            console.error("Failed to fetch YouTube chats:", error);
+          });
+      }
 
-    // Poll every 5 seconds
-    setInterval(fetchChats, 5000);
+      // Poll every 5 seconds
+      setInterval(fetchChats, 5000);
 
-    // Initial fetch
-    fetchChats();
-</script>
-
-</body>
+      // Initial fetch
+      fetchChats();
+    </script>
+  </body>
 </html>

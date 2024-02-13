@@ -5,7 +5,7 @@ import json
 import sys
 
 
-def fetch_chat(url, message_groups=None, max_messages=1):
+def fetch_chat(url, message_groups=None, max_messages=10):
     try:
         chat_downloader = ChatDownloader()
         chat = chat_downloader.get_chat(
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     if "youtube" in url:
         message_groups = ["messages"]
     elif "twitch" in url:
-        message_groups = []
+        message_groups = ["messages"]
 
     # Optionally, parse max_messages from command-line arguments
     if len(sys.argv) > 2:
