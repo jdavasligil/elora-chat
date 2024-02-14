@@ -1,4 +1,4 @@
-# EloraChat 🐐
+# elora-chat 🐐
 
 What if we were fauns? Haha. Just curious man, you don't have to get mad. Just look at that- _gets put in a chokehold_
 
