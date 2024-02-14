@@ -18,10 +18,15 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// Message represents a generic chat message
+type Author struct {
+	DisplayName string `json:"name"`
+	// Add other fields from the author dictionary as needed
+}
+
 type Message struct {
-	Author  string `json:"author"`
+	Author  Author `json:"author"`
 	Message string `json:"message"`
+	// Include other fields as necessary, based on the chat item fields documentation
 }
 
 // messageChannel is a channel for sending chat messages to WebSocket connections
@@ -30,8 +35,8 @@ var messageChannel = make(chan Message, 10) // Buffered channel
 // StartChatFetch starts fetching chat messages for each provided URL
 func StartChatFetch(urls []string) {
 
-	const pythonExecPath = "/mnt/c/Users/hwpDesktop/Documents/Content/Repos/EloraChat/python/venv/bin/python3"
-	var fetchChatScript = filepath.Join("/mnt/c/Users/hwpDesktop/Documents/Content/Repos/EloraChat/python", "fetch_chat.py")
+	const pythonExecPath = "/mnt/c/Users/hwpDesktop/Documents/Content/Repos/elora-chat/python/venv/bin/python3"
+	var fetchChatScript = filepath.Join("/mnt/c/Users/hwpDesktop/Documents/Content/Repos/elora-chat/python", "fetch_chat.py")
 
 	for _, url := range urls {
 		go func(url string) {
@@ -73,7 +78,13 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	for msg := range messageChannel {
-		if err := conn.WriteJSON(msg); err != nil {
+		// Create a simplified message for the frontend, if needed
+		simplifiedMsg := map[string]string{
+			"Author":  msg.Author.DisplayName, // Use DisplayName for the author
+			"Message": msg.Message,
+		}
+
+		if err := conn.WriteJSON(simplifiedMsg); err != nil {
 			log.Println("WebSocket write error:", err)
 			break
 		}
