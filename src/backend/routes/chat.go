@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -26,6 +27,7 @@ type Author struct {
 type Message struct {
 	Author  Author `json:"author"`
 	Message string `json:"message"`
+	Source  string `json:"source"` // New field to identify the message source
 	// Include other fields as necessary, based on the chat item fields documentation
 }
 
@@ -58,6 +60,13 @@ func StartChatFetch(urls []string) {
 					log.Println("Failed to unmarshal message:", err)
 					continue
 				}
+				// Determine source based on URL
+				if strings.Contains(url, "twitch.tv") {
+					msg.Source = "Twitch"
+				} else if strings.Contains(url, "youtube.com") {
+					msg.Source = "YouTube"
+				}
+
 				messageChannel <- msg
 			}
 
