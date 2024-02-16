@@ -87,13 +87,7 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	for msg := range messageChannel {
-		// Create a simplified message for the frontend, if needed
-		simplifiedMsg := map[string]string{
-			"Author":  msg.Author.DisplayName, // Use DisplayName for the author
-			"Message": msg.Message,
-		}
-
-		if err := conn.WriteJSON(simplifiedMsg); err != nil {
+		if err := conn.WriteJSON(msg); err != nil {
 			log.Println("WebSocket write error:", err)
 			break
 		}

@@ -19,6 +19,27 @@
       .chat-message {
         margin-bottom: 10px;
       }
+      .badge {
+        display: inline-block;
+        margin-right: 5px;
+        vertical-align: middle;
+      }
+      .twitch-badge {
+        background-image: url("https://www.vectorlogo.zone/logos/twitch/twitch-tile.svg");
+        width: 16px; /* or the size you prefer */
+        height: 16px; /* or the size you prefer */
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+      .youtube-badge {
+        background-image: url("https://www.vectorlogo.zone/logos/youtube/youtube-tile.svg");
+        width: 16px; /* or the size you prefer */
+        height: 16px; /* or the size you prefer */
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+      }
     </style>
   </head>
   <body>
@@ -33,11 +54,22 @@
       };
 
       ws.onmessage = function (event) {
+        console.log("Received message:", event.data); // For debugging
         const message = JSON.parse(event.data);
         const container = document.getElementById("chat-container");
         const messageElement = document.createElement("div");
         messageElement.classList.add("chat-message");
-        messageElement.innerHTML = `<b>${message.Author}:</b> ${message.Message}`;
+
+        let badgeHTML = "";
+        if (message.source === "Twitch") {
+          badgeHTML = '<span class="badge twitch-badge"></span>';
+        } else if (message.source === "YouTube") {
+          badgeHTML = '<span class="badge youtube-badge"></span>';
+        }
+
+        // Adjusted to match the actual structure of the message object
+        messageElement.innerHTML =
+          badgeHTML + `<b>${message.author.name}:</b> ${message.message}`;
         container.appendChild(messageElement);
         container.scrollTop = container.scrollHeight; // Scroll to the bottom
       };
