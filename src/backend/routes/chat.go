@@ -19,16 +19,41 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type Image struct {
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	ID     string `json:"id"`
+}
+
+type Emote struct {
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	Locations []string `json:"locations"`
+	Images    []Image  `json:"images"`
+}
+
+type Badge struct {
+	Name        string  `json:"name"`
+	Version     int     `json:"version"` // Adjusted from string to int
+	Title       string  `json:"title"`
+	ClickAction string  `json:"clickAction"`
+	ClickURL    string  `json:"clickURL"`
+	Icons       []Image `json:"icons"`
+}
+
 type Author struct {
-	DisplayName string `json:"name"`
-	// Add other fields from the author dictionary as needed
+	DisplayName string  `json:"name"`
+	Badges      []Badge `json:"badges"`
+	// Other fields as needed
 }
 
 type Message struct {
-	Author  Author `json:"author"`
-	Message string `json:"message"`
-	Source  string `json:"source"` // New field to identify the message source
-	// Include other fields as necessary, based on the chat item fields documentation
+	Author  string  `json:"author"` // Adjusted to directly receive the author's name as a string
+	Message string  `json:"message"`
+	Emotes  []Emote `json:"emotes"`
+	Badges  []Badge `json:"badges"`
+	Source  string  `json:"source"`
 }
 
 // messageChannel is a channel for sending chat messages to WebSocket connections
@@ -36,40 +61,34 @@ var messageChannel = make(chan Message, 10) // Buffered channel
 
 // StartChatFetch starts fetching chat messages for each provided URL
 func StartChatFetch(urls []string) {
-
 	const pythonExecPath = "/mnt/c/Users/hwpDesktop/Documents/Content/Repos/elora-chat/python/venv/bin/python3"
 	var fetchChatScript = filepath.Join("/mnt/c/Users/hwpDesktop/Documents/Content/Repos/elora-chat/python", "fetch_chat.py")
 
 	for _, url := range urls {
 		go func(url string) {
 			cmd := exec.Command(pythonExecPath, fetchChatScript, url)
-
 			stdout, err := cmd.StdoutPipe()
 			if err != nil {
 				log.Fatal("Failed to create stdout pipe:", err)
 			}
-
 			if err := cmd.Start(); err != nil {
 				log.Fatal("Failed to start command:", err)
 			}
-
 			scanner := bufio.NewScanner(stdout)
 			for scanner.Scan() {
 				var msg Message
-				if err := json.Unmarshal(scanner.Bytes(), &msg); err != nil {
-					log.Println("Failed to unmarshal message:", err)
+				rawMessage := scanner.Bytes()
+				if err := json.Unmarshal(rawMessage, &msg); err != nil {
+					log.Printf("Failed to unmarshal message: %v, Raw message: %s\n", err, string(rawMessage))
 					continue
 				}
-				// Determine source based on URL
 				if strings.Contains(url, "twitch.tv") {
 					msg.Source = "Twitch"
 				} else if strings.Contains(url, "youtube.com") {
 					msg.Source = "YouTube"
 				}
-
 				messageChannel <- msg
 			}
-
 			if err := scanner.Err(); err != nil {
 				log.Println("Error reading standard output:", err)
 			}
@@ -96,5 +115,5 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 
 // SetupChatRoutes sets up WebSocket routes
 func SetupChatRoutes(router *mux.Router) {
-	router.HandleFunc("/ws/chat", StreamChat)
+	router.HandleFunc("/ws/chat", StreamChat).Methods("GET")
 }
