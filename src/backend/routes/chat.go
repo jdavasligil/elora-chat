@@ -35,7 +35,6 @@ type Emote struct {
 
 type Badge struct {
 	Name        string  `json:"name"`
-	Version     int     `json:"version"` // Adjusted from string to int
 	Title       string  `json:"title"`
 	ClickAction string  `json:"clickAction"`
 	ClickURL    string  `json:"clickURL"`

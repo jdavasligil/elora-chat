@@ -21,8 +21,8 @@ func main() {
 
 	// Start fetching chat messages
 	chatURLs := []string{
-		"https://www.twitch.tv/hp_az",
-		"https://www.youtube.com/@hp_az/live",
+		//"https://www.twitch.tv/hp_az",
+		//"https://www.youtube.com/@hp_az/live",
 		"https://www.youtube.com/watch?v=jfKfPfyJRdk",
 		"https://www.twitch.tv/Johnstone",
 	}

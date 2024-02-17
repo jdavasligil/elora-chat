@@ -19,26 +19,16 @@
       .chat-message {
         margin-bottom: 10px;
       }
-      .badge {
-        display: inline-block;
+      .badge-icon {
+        height: 18px;
+        width: 18px;
         margin-right: 5px;
         vertical-align: middle;
       }
-      .twitch-badge {
-        background-image: url("https://www.vectorlogo.zone/logos/twitch/twitch-tile.svg");
-        width: 16px; /* or the size you prefer */
-        height: 16px; /* or the size you prefer */
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center;
-      }
-      .youtube-badge {
-        background-image: url("https://www.vectorlogo.zone/logos/youtube/youtube-tile.svg");
-        width: 16px; /* or the size you prefer */
-        height: 16px; /* or the size you prefer */
-        background-size: contain;
-        background-repeat: no-repeat;
-        background-position: center;
+      .emote-img {
+        height: 28px;
+        width: 28px;
+        vertical-align: middle;
       }
     </style>
   </head>
@@ -60,16 +50,26 @@
         const messageElement = document.createElement("div");
         messageElement.classList.add("chat-message");
 
-        let badgeHTML = "";
-        if (message.source === "Twitch") {
-          badgeHTML = '<span class="badge twitch-badge"></span>';
-        } else if (message.source === "YouTube") {
-          badgeHTML = '<span class="badge youtube-badge"></span>';
+        let badgesHTML = "";
+        message.badges.forEach((badge) => {
+          badgesHTML += `<img src="${badge.icons[0].url}" class="badge-icon" title="${badge.title}">`;
+        });
+
+        let messageWithEmotes = message.message;
+        // Replace emote keywords with images if emotes are present
+        if (message.emotes && message.emotes.length > 0) {
+          message.emotes.forEach((emote) => {
+            const emoteImgHTML = `<img src="${emote.images[0].url}" class="emote-img" alt="${emote.name}">`;
+            const emoteRegex = new RegExp(emote.name, "g");
+            messageWithEmotes = messageWithEmotes.replace(
+              emoteRegex,
+              emoteImgHTML
+            );
+          });
         }
 
-        // Adjusted to match the actual structure of the message object
         messageElement.innerHTML =
-          badgeHTML + `<b>${message.author.name}:</b> ${message.message}`;
+          badgesHTML + `<b>${message.author}:</b> ${messageWithEmotes}`;
         container.appendChild(messageElement);
         container.scrollTop = container.scrollHeight; // Scroll to the bottom
       };

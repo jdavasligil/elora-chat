@@ -3,43 +3,38 @@ import json
 import sys
 
 
-def fetch_chat(url, message_groups=None, max_messages=10):
+def fetch_chat(url, message_groups=None):
+    chat_downloader = ChatDownloader()
     try:
-        chat_downloader = ChatDownloader()
-        chat = chat_downloader.get_chat(
-            url=url,
-            message_groups=message_groups or ["messages"],
-            max_messages=max_messages,
-        )
+        chat = chat_downloader.get_chat(url=url, message_groups=message_groups)
 
         for message in chat:
-            # We want to output the message, emotes, and badges
+            # Extract required information if available
             message_data = {
-                "message": message["message"],
-                "author": message["author"]["name"],
+                "message": message.get("message", ""),
+                "author": message["author"].get("name", "Unknown"),
                 "emotes": message.get("emotes", []),
                 "badges": message["author"].get("badges", []),
             }
             print(json.dumps(message_data))  # Print messages as JSON
+            sys.stdout.flush()  # Ensure the output is flushed immediately
+
     except Exception as e:
         print(f"Error fetching chat: {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python fetch_chat.py <stream_url>", file=sys.stderr)
+        sys.exit(1)
+
     url = sys.argv[1]  # Channel URL
-    # Default values
-    max_messages = 10
 
-    # Extract platform from URL to determine message_groups
+    # Determine message_groups based on the platform in the URL
     message_groups = ["messages"]
+    if "twitch.tv" in url:
+        message_groups = ["messages"]
+    elif "youtube.com" in url:
+        message_groups = ["messages"]
 
-    # Optionally, parse max_messages from command-line arguments
-    if len(sys.argv) > 2:
-        try:
-            max_messages = int(sys.argv[2])
-        except ValueError:
-            print(
-                "Warning: Invalid max_messages value. Using default.", file=sys.stderr
-            )
-
-    fetch_chat(url, message_groups=message_groups, max_messages=max_messages)
+    fetch_chat(url, message_groups=message_groups)
