@@ -50,7 +50,16 @@
         const messageElement = document.createElement("div");
         messageElement.classList.add("chat-message");
 
-        let badgesHTML = "";
+        let sourceBadgeHTML = "";
+        if (message.source === "Twitch") {
+          sourceBadgeHTML =
+            '<img src="https://www.vectorlogo.zone/logos/twitch/twitch-icon.svg" class="badge-icon" title="Twitch">';
+        } else if (message.source === "YouTube") {
+          sourceBadgeHTML =
+            '<img src="https://www.vectorlogo.zone/logos/youtube/youtube-icon.svg" class="badge-icon" title="YouTube">';
+        }
+
+        let badgesHTML = sourceBadgeHTML; // Start with the source badge
         message.badges.forEach((badge) => {
           badgesHTML += `<img src="${badge.icons[0].url}" class="badge-icon" title="${badge.title}">`;
         });

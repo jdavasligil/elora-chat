@@ -23,8 +23,13 @@ func main() {
 	chatURLs := []string{
 		//"https://www.twitch.tv/hp_az",
 		//"https://www.youtube.com/@hp_az/live",
-		"https://www.youtube.com/watch?v=jfKfPfyJRdk",
-		"https://www.twitch.tv/Johnstone",
+		// "https://www.youtube.com/watch?v=jfKfPfyJRdk",
+		//"https://www.twitch.tv/Johnstone",
+		"https://www.twitch.tv/Hypnoshark",
+		//"https://www.twitch.tv/QTCinderella",
+		// "https://www.twitch.tv/Quin69",
+		// "https://www.twitch.tv/jakenbakeLIVE",
+		// "https://www.twitch.tv/Knut",
 	}
 	routes.StartChatFetch(chatURLs)
 
