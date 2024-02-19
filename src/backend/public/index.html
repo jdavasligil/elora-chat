@@ -53,6 +53,22 @@
         return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
       }
 
+      function loadImageWithRetry(imgElement, url, maxRetries = 3) {
+        function onError() {
+          if (maxRetries-- > 0) {
+            setTimeout(() => {
+              imgElement.src = url;
+            }, 1000);
+          } else {
+            imgElement.src = "default-badge.png"; // Fallback to a default badge image
+            imgElement.onerror = null; // Remove the onError handler to prevent an infinite loop
+          }
+        }
+
+        imgElement.onerror = onError;
+        imgElement.src = url;
+      }
+
       const ws = new WebSocket("ws://localhost:8080/ws/chat");
 
       ws.onopen = function () {
@@ -78,7 +94,11 @@
         message.badges.forEach((badge) => {
           // Only add badges with icons
           if (badge.icons && badge.icons.length > 0) {
-            badgesHTML += `<img src="${badge.icons[0].url}" class="badge-icon" title="${badge.title}">`;
+            const img = document.createElement("img");
+            img.className = "badge-icon";
+            img.title = badge.title;
+            loadImageWithRetry(img, badge.icons[0].url);
+            badgesHTML += img.outerHTML;
           }
           // No else block needed, badges without icons are simply skipped
         });
