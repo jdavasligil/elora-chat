@@ -80,6 +80,11 @@
           });
         }
 
+        // Replace black usernames with higher contrast color to show up on black background
+        if (message.colour == "#000000") {
+          message.colour = "#CCCCCC"; // Light grey for visibility
+        }
+
         messageElement.innerHTML =
           badgesHTML +
           `<b><span style="color: ${message.colour}">${message.author}:</span></b> ${messageWithEmotes}`;
