@@ -58,9 +58,13 @@
             '<img src="youtube-tile.svg" class="badge-icon" title="YouTube">';
         }
 
-        let badgesHTML = sourceBadgeHTML; // Start with the source badge
+        let badgesHTML = "";
         message.badges.forEach((badge) => {
-          badgesHTML += `<img src="${badge.icons[0].url}" class="badge-icon" title="${badge.title}">`;
+          // Only add badges with icons
+          if (badge.icons && badge.icons.length > 0) {
+            badgesHTML += `<img src="${badge.icons[0].url}" class="badge-icon" title="${badge.title}">`;
+          }
+          // No else block needed, badges without icons are simply skipped
         });
 
         let messageWithEmotes = message.message;
