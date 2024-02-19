@@ -49,6 +49,10 @@
     <div id="chat-container"></div>
 
     <script>
+      function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
+      }
+
       const ws = new WebSocket("ws://localhost:8080/ws/chat");
 
       ws.onopen = function () {
@@ -81,10 +85,12 @@
 
         let messageWithEmotes = message.message;
         // Replace emote keywords with images if emotes are present
+        // Before replacing, escape the emote name
         if (message.emotes && message.emotes.length > 0) {
           message.emotes.forEach((emote) => {
             const emoteImgHTML = `<img src="${emote.images[0].url}" class="emote-img" alt="${emote.name}">`;
-            const emoteRegex = new RegExp(emote.name, "g");
+            const escapedEmoteName = escapeRegExp(emote.name);
+            const emoteRegex = new RegExp(escapedEmoteName, "g");
             messageWithEmotes = messageWithEmotes.replace(
               emoteRegex,
               emoteImgHTML

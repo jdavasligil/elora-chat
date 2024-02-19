@@ -29,11 +29,11 @@ func main() {
 		// "https://www.youtube.com/watch?v=39VeO9p7Vn0", // dayo live test stream
 		// "https://www.youtube.com/live/6sjf7R0o-ss?si=WkdXIOu83_7Sglk2&t=7500", // ludwig live test stream
 		// "https://www.twitch.tv/Johnstone",
-		// "https://www.twitch.tv/Hypnoshark",
+		"https://www.twitch.tv/Hypnoshark",
 		// "https://www.twitch.tv/QTCinderella",
 		"https://www.twitch.tv/Quin69",
 		// "https://www.twitch.tv/jakenbakeLIVE",
-		// "https://www.twitch.tv/Knut",
+		"https://www.twitch.tv/Knut",
 		// "https://www.youtube.com/@dayoman/live",
 		// "https://www.twitch.tv/dayoman",
 		// "https://www.twitch.tv/forsen", // basically a hard code for constant chats
@@ -43,6 +43,7 @@ func main() {
 		// "https://www.youtube.com/watch?v=VebOqD00Zj8",
 		// "https://www.youtube.com/watch?v=pCTxDYFdEOk",
 		// "https://youtube.com/live/JHqR9hq70No?feature=share",
+		"https://www.twitch.tv/papaplatte",
 	}
 	routes.StartChatFetch(chatURLs)
 
