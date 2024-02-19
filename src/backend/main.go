@@ -40,7 +40,9 @@ func main() {
 		// "https://www.twitch.tv/jynxzi", // basically a hard code for constant chats
 		// "https://www.youtube.com/watch?v=Gtqw9b8g2wk",
 		// "https://www.twitch.tv/abel",
-		"https://www.youtube.com/watch?v=VebOqD00Zj8",
+		// "https://www.youtube.com/watch?v=VebOqD00Zj8",
+		// "https://www.youtube.com/watch?v=pCTxDYFdEOk",
+		"https://youtube.com/live/JHqR9hq70No?feature=share",
 	}
 	routes.StartChatFetch(chatURLs)
 

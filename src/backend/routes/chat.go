@@ -53,6 +53,7 @@ type Message struct {
 	Emotes  []Emote `json:"emotes"`
 	Badges  []Badge `json:"badges"`
 	Source  string  `json:"source"`
+	Colour  string  `json:"colour"`
 }
 
 // messageChannel is a channel for sending chat messages to WebSocket connections
