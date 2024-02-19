@@ -65,7 +65,7 @@ func StartChatFetch(urls []string) {
 
 	for _, url := range urls {
 		go func(url string) {
-			cmd := exec.Command(pythonExecPath, fetchChatScript, url)
+			cmd := exec.Command(pythonExecPath, "-u", fetchChatScript, url)
 			stdout, err := cmd.StdoutPipe()
 			if err != nil {
 				log.Fatal("Failed to create stdout pipe:", err)
