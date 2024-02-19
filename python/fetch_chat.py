@@ -35,6 +35,7 @@ def fetch_chat(url, message_groups=None):
                 "colour": color,  # Add the color here
             }
             print(json.dumps(message_data))  # Print messages as JSON
+            sys.stdout.flush()  # Ensure the output is flushed immediately
     except Exception as e:
         print(f"Error fetching chat: {e}", file=sys.stderr)
 
