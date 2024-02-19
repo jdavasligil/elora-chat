@@ -13,11 +13,13 @@
       #chat-container {
         height: 500px;
         overflow-y: scroll;
-        border: 1px solid #333; /* Adjust border color for better visibility on a black background */
+        border: 1px solid #333;
         padding: 10px;
       }
       .chat-message {
         margin-bottom: 10px;
+        opacity: 0; /* Start with the message invisible */
+        animation: slideUp 0.5s forwards; /* Apply the slide-up animation */
       }
       .badge-icon {
         height: 18px;
@@ -29,6 +31,16 @@
         height: 28px;
         width: 28px;
         vertical-align: middle;
+      }
+      @keyframes slideUp {
+        from {
+          transform: translateY(20px); /* Start slightly below */
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
       }
     </style>
   </head>
