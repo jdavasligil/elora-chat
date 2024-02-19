@@ -58,7 +58,7 @@
             '<img src="youtube-tile.svg" class="badge-icon" title="YouTube">';
         }
 
-        let badgesHTML = "";
+        let badgesHTML = sourceBadgeHTML; // Start with the source badge
         message.badges.forEach((badge) => {
           // Only add badges with icons
           if (badge.icons && badge.icons.length > 0) {

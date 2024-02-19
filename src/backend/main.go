@@ -31,7 +31,7 @@ func main() {
 		// "https://www.twitch.tv/Johnstone",
 		// "https://www.twitch.tv/Hypnoshark",
 		// "https://www.twitch.tv/QTCinderella",
-		// "https://www.twitch.tv/Quin69",
+		"https://www.twitch.tv/Quin69",
 		// "https://www.twitch.tv/jakenbakeLIVE",
 		// "https://www.twitch.tv/Knut",
 		// "https://www.youtube.com/@dayoman/live",
@@ -42,7 +42,7 @@ func main() {
 		// "https://www.twitch.tv/abel",
 		// "https://www.youtube.com/watch?v=VebOqD00Zj8",
 		// "https://www.youtube.com/watch?v=pCTxDYFdEOk",
-		"https://youtube.com/live/JHqR9hq70No?feature=share",
+		// "https://youtube.com/live/JHqR9hq70No?feature=share",
 	}
 	routes.StartChatFetch(chatURLs)
 
