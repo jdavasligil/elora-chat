@@ -1,15 +1,24 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
-
-	"github.com/hpwn/EloraChat/src/backend/routes" // Ensure this is the correct path to your routes package
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/hpwn/EloraChat/src/backend/routes" // Ensure this is the correct path to your routes package
 )
 
 func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Default to port 8080 if not specified
+	}
+
 	r := mux.NewRouter()
 
 	// Set up WebSocket chat routes
@@ -29,11 +38,11 @@ func main() {
 		// "https://www.youtube.com/watch?v=39VeO9p7Vn0", // dayo live test stream
 		// "https://www.youtube.com/live/6sjf7R0o-ss?si=WkdXIOu83_7Sglk2&t=7500", // ludwig live test stream
 		// "https://www.twitch.tv/Johnstone",
-		"https://www.twitch.tv/Hypnoshark",
+		// "https://www.twitch.tv/Hypnoshark",
 		// "https://www.twitch.tv/QTCinderella",
-		"https://www.twitch.tv/Quin69",
+		// "https://www.twitch.tv/Quin69",
 		// "https://www.twitch.tv/jakenbakeLIVE",
-		"https://www.twitch.tv/Knut",
+		// "https://www.twitch.tv/Knut",
 		// "https://www.youtube.com/@dayoman/live",
 		// "https://www.twitch.tv/dayoman",
 		// "https://www.twitch.tv/forsen", // basically a hard code for constant chats
@@ -43,14 +52,35 @@ func main() {
 		// "https://www.youtube.com/watch?v=VebOqD00Zj8",
 		// "https://www.youtube.com/watch?v=pCTxDYFdEOk",
 		// "https://youtube.com/live/JHqR9hq70No?feature=share",
-		"https://www.twitch.tv/papaplatte",
-		"https://www.youtube.com/watch?v=REmPV-EPwPc", // ninja yt
+		// "https://www.twitch.tv/papaplatte",
+		// "https://www.youtube.com/watch?v=REmPV-EPwPc", // ninja yt
 	}
 	routes.StartChatFetch(chatURLs)
 
-	// Start the server
-	log.Println("Starting server on :8080")
-	if err := http.ListenAndServe(":8080", r); err != nil {
-		log.Fatal("Server start error:", err)
+	// Create server
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: r,
 	}
+
+	// Start the server in a goroutine
+	go func() {
+		log.Printf("Starting server on :%s\n", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server start error: %v", err)
+		}
+	}()
+
+	// Graceful shutdown
+	c := make(chan os.Signal, 1)
+	// Accept graceful shutdowns when quit via SIGINT (Ctrl+C) or SIGTERM (Kubernetes pod shutdown)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	<-c
+
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	srv.Shutdown(ctx)
+	log.Println("shutting down")
+	os.Exit(0)
 }
