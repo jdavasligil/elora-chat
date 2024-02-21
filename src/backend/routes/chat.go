@@ -121,9 +121,10 @@ func ImageProxy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp, err := http.Get(imageURL)
-	if err != nil {
-		log.Printf("Failed to fetch image: %v\n", err)
-		http.Error(w, "Failed to fetch image", http.StatusBadGateway)
+	if err != nil || resp.StatusCode == 404 {
+		// Log error and serve a default placeholder image
+		log.Printf("Error fetching image or not found: %s", imageURL)
+		http.ServeFile(w, r, "../public/refresh.png")
 		return
 	}
 	defer resp.Body.Close()
