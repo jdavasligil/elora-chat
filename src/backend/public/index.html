@@ -60,7 +60,7 @@
               imgElement.src = url;
             }, 1000);
           } else {
-            imgElement.src = "refresh.png"; // Fallback to a default badge image
+            imgElement.src = "refresh.png"; // Fallback to a default image
             imgElement.onerror = null; // Remove the onError handler to prevent an infinite loop
           }
         }
@@ -92,34 +92,34 @@
 
         let badgesHTML = sourceBadgeHTML; // Start with the source badge
         message.badges.forEach((badge) => {
-          // Only add badges with icons
           if (badge.icons && badge.icons.length > 0) {
-            const img = document.createElement("img");
-            img.className = "badge-icon";
-            img.title = badge.title;
-            loadImageWithRetry(img, badge.icons[0].url);
-            badgesHTML += img.outerHTML;
+            const badgeImg = document.createElement("img");
+            badgeImg.className = "badge-icon";
+            badgeImg.title = badge.title;
+            loadImageWithRetry(badgeImg, badge.icons[0].url);
+            badgesHTML += badgeImg.outerHTML;
           }
-          // No else block needed, badges without icons are simply skipped
         });
 
         let messageWithEmotes = message.message;
-        // Replace emote keywords with images if emotes are present
-        // Before replacing, escape the emote name
         if (message.emotes && message.emotes.length > 0) {
           message.emotes.forEach((emote) => {
-            const emoteImgHTML = `<img src="${emote.images[0].url}" class="emote-img" alt="${emote.name}">`;
+            const emoteImg = document.createElement("img");
+            emoteImg.className = "emote-img";
+            emoteImg.alt = emote.name;
+            loadImageWithRetry(emoteImg, emote.images[0].url);
+
             const escapedEmoteName = escapeRegExp(emote.name);
             const emoteRegex = new RegExp(escapedEmoteName, "g");
             messageWithEmotes = messageWithEmotes.replace(
               emoteRegex,
-              emoteImgHTML
+              emoteImg.outerHTML
             );
           });
         }
 
         // Replace black usernames with higher contrast color to show up on black background
-        if (message.colour == "#000000") {
+        if (message.colour === "#000000") {
           message.colour = "#CCCCCC"; // Light grey for visibility
         }
 
