@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -62,8 +61,8 @@ var messageChannel = make(chan Message, 10) // Buffered channel
 
 // StartChatFetch starts fetching chat messages for each provided URL
 func StartChatFetch(urls []string) {
-	const pythonExecPath = "/mnt/c/Users/hwpDesktop/Documents/Content/Repos/elora-chat/python/venv/bin/python3"
-	var fetchChatScript = filepath.Join("/mnt/c/Users/hwpDesktop/Documents/Content/Repos/elora-chat/python", "fetch_chat.py")
+	const pythonExecPath = "../../python/venv/bin/python3"
+	var fetchChatScript = "../../python/fetch_chat.py"
 
 	for _, url := range urls {
 		go func(url string) {
