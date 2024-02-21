@@ -53,20 +53,8 @@
         return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
       }
 
-      function loadImageWithRetry(imgElement, url, maxRetries = 3) {
-        function onError() {
-          if (maxRetries-- > 0) {
-            setTimeout(() => {
-              imgElement.src = url;
-            }, 1000);
-          } else {
-            imgElement.src = "refresh.png"; // Fallback to a default image
-            imgElement.onerror = null; // Remove the onError handler to prevent an infinite loop
-          }
-        }
-
-        imgElement.onerror = onError;
-        imgElement.src = url;
+      function loadImage(src) {
+        return `/imageproxy?url=${encodeURIComponent(src)}`;
       }
 
       const ws = new WebSocket("ws://localhost:8080/ws/chat");
@@ -96,7 +84,7 @@
             const badgeImg = document.createElement("img");
             badgeImg.className = "badge-icon";
             badgeImg.title = badge.title;
-            loadImageWithRetry(badgeImg, badge.icons[0].url);
+            badgeImg.src = loadImage(badge.icons[0].url);
             badgesHTML += badgeImg.outerHTML;
           }
         });
@@ -107,7 +95,7 @@
             const emoteImg = document.createElement("img");
             emoteImg.className = "emote-img";
             emoteImg.alt = emote.name;
-            loadImageWithRetry(emoteImg, emote.images[0].url);
+            emoteImg.src = loadImage(emote.images[0].url);
 
             const escapedEmoteName = escapeRegExp(emote.name);
             const emoteRegex = new RegExp(escapedEmoteName, "g");

@@ -3,6 +3,7 @@ package routes
 import (
 	"bufio"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"os/exec"
@@ -113,7 +114,33 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func ImageProxy(w http.ResponseWriter, r *http.Request) {
+	imageURL := r.URL.Query().Get("url")
+	if imageURL == "" {
+		http.Error(w, "Missing URL parameter", http.StatusBadRequest)
+		return
+	}
+
+	resp, err := http.Get(imageURL)
+	if err != nil {
+		log.Printf("Failed to fetch image: %v\n", err)
+		http.Error(w, "Failed to fetch image", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Copy headers
+	for key, value := range resp.Header {
+		w.Header().Set(key, value[0])
+	}
+
+	// Stream the image content
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, resp.Body)
+}
+
 // SetupChatRoutes sets up WebSocket routes
 func SetupChatRoutes(router *mux.Router) {
 	router.HandleFunc("/ws/chat", StreamChat).Methods("GET")
+	router.HandleFunc("/imageproxy", ImageProxy).Methods("GET") // New proxy route
 }
