@@ -61,8 +61,8 @@ var messageChannel = make(chan Message, 10) // Buffered channel
 
 // StartChatFetch starts fetching chat messages for each provided URL
 func StartChatFetch(urls []string) {
-	const pythonExecPath = "../../python/venv/bin/python3"
-	var fetchChatScript = "../../python/fetch_chat.py"
+	const pythonExecPath = "/usr/local/bin/python3"
+	const fetchChatScript = "/app/python/fetch_chat.py"
 
 	for _, url := range urls {
 		go func(url string) {
