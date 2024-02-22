@@ -1,6 +1,43 @@
+# General
+**/.DS_Store
+**/Thumbs.db
+
+# Git and version control
 .git
 .gitignore
+
+# Docker
 Dockerfile
-README.md
-*.pyc
-__pycache__
+.dockerignore
+
+# Go
+**/vendor/
+**/*.test
+**/*.out
+
+# Python
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/python/venv/
+
+# Node.js
+**/node_modules/
+**/npm-debug.log
+**/yarn-error.log
+
+# Logs
+**/*.log
+**/logs
+
+# Temporary files
+**/tmp
+**/.tmp
+**/temp
+
+# Other artifacts
+**/.idea
+**/.vscode
+**/*.tar.gz
+**/*.zip
