@@ -2,6 +2,7 @@ package routes
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"io"
 	"log"
@@ -11,7 +12,12 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	"github.com/redis/go-redis/v9"
 )
+
+// Initialize a Redis client as a global variable.
+var redisClient *redis.Client
+var ctx = context.Background()
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
