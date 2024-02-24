@@ -57,7 +57,7 @@
         return `/imageproxy?url=${encodeURIComponent(src)}`;
       }
 
-      const ws = new WebSocket("ws://elora.chat/ws/chat");
+      const ws = new WebSocket("ws://localhost:8080/ws/chat");
 
       ws.onopen = function () {
         console.log("WebSocket Connection established");

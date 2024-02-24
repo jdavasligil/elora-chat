@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -62,8 +63,20 @@ type Message struct {
 	Colour  string  `json:"colour"`
 }
 
-// messageChannel is a channel for sending chat messages to WebSocket connections
-var messageChannel = make(chan Message, 10) // Buffered channel
+func init() {
+	// Initialize the Redis client.
+	redisClient = redis.NewClient(&redis.Options{
+		Addr:     "redis:6379", // Localhost if running Redis locally
+		Password: "",           // No password if not set
+		DB:       0,            // Default DB
+	})
+
+	// Check the Redis connection
+	_, err := redisClient.Ping(ctx).Result()
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+}
 
 // StartChatFetch starts fetching chat messages for each provided URL
 func StartChatFetch(urls []string) {
@@ -93,7 +106,19 @@ func StartChatFetch(urls []string) {
 				} else if strings.Contains(url, "youtube.com") {
 					msg.Source = "YouTube"
 				}
-				messageChannel <- msg
+
+				// Re-marshal the message with the Source set.
+				modifiedMessage, err := json.Marshal(msg)
+				if err != nil {
+					log.Printf("Failed to marshal message: %v, Message: %#v\n", err, msg)
+					continue
+				}
+
+				// Publish the modified message to Redis.
+				err = redisClient.Publish(ctx, "chatMessages", modifiedMessage).Err()
+				if err != nil {
+					log.Printf("Failed to publish message: %v, Modified message: %s\n", err, string(modifiedMessage))
+				}
 			}
 			if err := scanner.Err(); err != nil {
 				log.Println("Error reading standard output:", err)
@@ -111,11 +136,29 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	for msg := range messageChannel {
-		if err := conn.WriteJSON(msg); err != nil {
-			log.Println("WebSocket write error:", err)
-			break
+	// Subscribe to the Redis channel.
+	pubsub := redisClient.Subscribe(ctx, "chatMessages")
+	defer pubsub.Close()
+
+	// Go routine to receive messages.
+	go func() {
+		ch := pubsub.Channel()
+		for msg := range ch {
+			// Use the WebSocket connection to send the message to the client.
+			if err := conn.WriteMessage(websocket.TextMessage, []byte(msg.Payload)); err != nil {
+				log.Println("WebSocket write error:", err)
+				return
+			}
 		}
+	}()
+
+	// Keep the connection alive or end the function based on your WebSocket library's requirements.
+	// This is usually done with a for loop or select statement that blocks until the connection is closed.
+	// Here's an example of a blocking for loop that you might use if your library doesn't handle this for you:
+	for {
+		// Blocking pattern to keep the connection open.
+		// Note: This may need to be replaced or removed depending on your WebSocket library's implementation.
+		time.Sleep(10 * time.Second)
 	}
 }
 
