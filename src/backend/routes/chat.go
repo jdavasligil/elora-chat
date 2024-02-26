@@ -49,12 +49,6 @@ type Badge struct {
 	Icons       []Image `json:"icons"`
 }
 
-type Author struct {
-	DisplayName string  `json:"name"`
-	Badges      []Badge `json:"badges"`
-	// Other fields as needed
-}
-
 type Message struct {
 	Author  string  `json:"author"` // Adjusted to directly receive the author's name as a string
 	Message string  `json:"message"`
