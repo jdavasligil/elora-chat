@@ -57,6 +57,17 @@
         return `/imageproxy?url=${encodeURIComponent(src)}`;
       }
 
+      function ping() {
+        ws.send("__ping__");
+        tm = setTimeout(function () {
+          /// ---connection closed ///
+        }, 5000);
+      }
+
+      function pong() {
+        clearTimeout(tm);
+      }
+
       const ws = new WebSocket("wss://elora.chat/ws/chat");
       const messageQueue = [];
       let processing = false;
@@ -127,10 +138,16 @@
 
       ws.onopen = function () {
         console.log("WebSocket Connection established");
+        setInterval(ping, 30000);
       };
 
       ws.onmessage = function (event) {
-        messageQueue.push(JSON.parse(event.data)); // Add new messages to the queue
+        var msg = event.data;
+        if (msg == "__pong__") {
+          pong();
+          return;
+        }
+        messageQueue.push(JSON.parse(msg)); // Add new messages to the queue
         if (!processing) {
           processMessageQueue(); // Start processing if not already doing so
         }
