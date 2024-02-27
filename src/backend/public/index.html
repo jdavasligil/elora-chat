@@ -9,6 +9,7 @@
         background-color: black;
         color: white;
         font-family: Arial, sans-serif;
+        forced-color-adjust: none; /* This prevents high contrast mode from changing colors */
       }
       #chat-container {
         height: 500px;
@@ -20,6 +21,7 @@
         margin-bottom: 10px;
         opacity: 0; /* Start with the message invisible */
         animation: slideUp 0.5s forwards; /* Apply the slide-up animation */
+        forced-color-adjust: none; /* This prevents high contrast mode from changing colors */
       }
       .badge-icon {
         height: 18px;
@@ -40,6 +42,13 @@
         to {
           transform: translateY(0);
           opacity: 1;
+        }
+      }
+      /* Ensure forced colors are applied only when high contrast mode is active */
+      @media (forced-colors: active) {
+        body,
+        .chat-message {
+          forced-color-adjust: none;
         }
       }
     </style>
