@@ -20,7 +20,7 @@
       .chat-message {
         margin-bottom: 10px;
         opacity: 0; /* Start with the message invisible */
-        animation: slideUp 0.5s forwards; /* Apply the slide-up animation */
+        animation: glideInBounce 0.5s forwards; /* Apply the glide-in-bounce animation */
         forced-color-adjust: none; /* This prevents high contrast mode from changing colors */
       }
       .badge-icon {
@@ -34,13 +34,17 @@
         width: 28px;
         vertical-align: middle;
       }
-      @keyframes slideUp {
-        from {
-          transform: translateY(20px); /* Start slightly below */
+      @keyframes glideInBounce {
+        0% {
+          transform: translateX(100%); /* Start from the right */
           opacity: 0;
         }
-        to {
-          transform: translateY(0);
+        70% {
+          transform: translateX(-10%); /* Move a bit to the left for bounce */
+          opacity: 1;
+        }
+        100% {
+          transform: translateX(0); /* Settle into final position */
           opacity: 1;
         }
       }
