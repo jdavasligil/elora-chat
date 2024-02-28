@@ -66,17 +66,6 @@
         return `/imageproxy?url=${encodeURIComponent(src)}`;
       }
 
-      function ping() {
-        ws.send("__ping__");
-        tm = setTimeout(function () {
-          /// ---connection closed ///
-        }, 5000);
-      }
-
-      function pong() {
-        clearTimeout(tm);
-      }
-
       const ws = new WebSocket("wss://elora.chat/ws/chat");
       const messageQueue = [];
       let processing = false;
@@ -147,18 +136,26 @@
 
       ws.onopen = function () {
         console.log("WebSocket Connection established");
-        setInterval(ping, 30000);
       };
 
       ws.onmessage = function (event) {
         var msg = event.data;
-        if (msg == "__pong__") {
-          pong();
+        // Check if the message is the keep-alive message before attempting to parse it as JSON
+        if (msg === "__keepalive__") {
+          // It's the keep-alive message, so just return and do nothing
           return;
         }
-        messageQueue.push(JSON.parse(msg)); // Add new messages to the queue
-        if (!processing) {
-          processMessageQueue(); // Start processing if not already doing so
+
+        // If the message is not the keep-alive message, attempt to parse it as JSON
+        try {
+          var parsedMsg = JSON.parse(msg);
+          messageQueue.push(parsedMsg); // Add parsed messages to the queue
+          if (!processing) {
+            processMessageQueue(); // Start processing if not already doing so
+          }
+        } catch (e) {
+          console.error("Error parsing message:", msg, e);
+          // Handle the error (e.g., log it, ignore it, or inform the user)
         }
       };
 

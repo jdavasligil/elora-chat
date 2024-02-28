@@ -150,12 +150,20 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	// Keep the connection alive or end the function based on your WebSocket library's requirements.
-	// This is usually done with a for loop or select statement that blocks until the connection is closed.
-	// Here's an example of a blocking for loop that you might use if your library doesn't handle this for you:
+	// Start a goroutine to send keep-alive messages
+	go func() {
+		for {
+			time.Sleep(20 * time.Second) // Send keep-alive message every 20 seconds
+			if err := conn.WriteMessage(websocket.TextMessage, []byte("__keepalive__")); err != nil {
+				log.Println("Failed to send keep-alive message:", err)
+				break // Exit the loop if there's an error (e.g., connection closed)
+			}
+		}
+	}()
+
+	// Your existing code for keeping the connection open or handling other aspects of the WebSocket
 	for {
-		// Blocking pattern to keep the connection open.
-		// Note: This may need to be replaced or removed depending on your WebSocket library's implementation.
+		// Example blocking pattern to keep the connection open
 		time.Sleep(10 * time.Second)
 	}
 }
