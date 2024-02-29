@@ -70,9 +70,42 @@
         return `/imageproxy?url=${encodeURIComponent(src)}`;
       }
 
-      const ws = new WebSocket("wss://elora.chat/ws/chat");
+      let ws;
       const messageQueue = [];
       let processing = false;
+
+      function initializeWebSocket() {
+        ws = new WebSocket("wss://elora.chat/ws/chat");
+
+        ws.onopen = function () {
+          console.log("WebSocket Connection established");
+        };
+
+        ws.onmessage = function (event) {
+          var msg = event.data;
+          if (msg === "__keepalive__") {
+            return;
+          }
+
+          try {
+            var parsedMsg = JSON.parse(msg);
+            messageQueue.push(parsedMsg);
+            if (!processing) {
+              processMessageQueue();
+            }
+          } catch (e) {
+            console.error("Error parsing message:", msg, e);
+          }
+        };
+
+        ws.onerror = function (error) {
+          console.log("WebSocket Error: " + error);
+        };
+
+        ws.onclose = function () {
+          console.log("WebSocket Connection closed");
+        };
+      }
 
       function processMessageQueue() {
         if (messageQueue.length === 0) {
@@ -138,38 +171,19 @@
         setTimeout(processMessageQueue, 500); // Delay of 500ms between messages
       }
 
-      ws.onopen = function () {
-        console.log("WebSocket Connection established");
-      };
+      // Initialize WebSocket connection
+      initializeWebSocket();
 
-      ws.onmessage = function (event) {
-        var msg = event.data;
-        // Check if the message is the keep-alive message before attempting to parse it as JSON
-        if (msg === "__keepalive__") {
-          // It's the keep-alive message, so just return and do nothing
-          return;
+      // Handle visibility change
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) {
+          console.log("Tab is inactive, closing WebSocket connection.");
+          ws.close(); // Close the WebSocket connection
+        } else {
+          console.log("Tab is active, opening WebSocket connection.");
+          initializeWebSocket(); // Re-initialize the WebSocket connection
         }
-
-        // If the message is not the keep-alive message, attempt to parse it as JSON
-        try {
-          var parsedMsg = JSON.parse(msg);
-          messageQueue.push(parsedMsg); // Add parsed messages to the queue
-          if (!processing) {
-            processMessageQueue(); // Start processing if not already doing so
-          }
-        } catch (e) {
-          console.error("Error parsing message:", msg, e);
-          // Handle the error (e.g., log it, ignore it, or inform the user)
-        }
-      };
-
-      ws.onerror = function (error) {
-        console.log("WebSocket Error: " + error);
-      };
-
-      ws.onclose = function () {
-        console.log("WebSocket Connection closed");
-      };
+      });
     </script>
   </body>
 </html>
