@@ -17,6 +17,15 @@
         border: 1px solid #333;
         padding: 10px;
       }
+      /* Hide scrollbar for Chrome, Safari and Opera */
+      #chat-container::-webkit-scrollbar {
+        display: none;
+      }
+      /* Hide scrollbar for IE, Edge, and Firefox */
+      #chat-container {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+      }
       .chat-message {
         margin-bottom: 10px;
         opacity: 0; /* Start with the message invisible */
