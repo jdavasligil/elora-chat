@@ -3,7 +3,6 @@ package routes
 import (
 	"bufio"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"io"
 	"log"
@@ -59,15 +58,15 @@ type Message struct {
 }
 
 func init() {
-	// Initialize the Redis client.
+	// Initialize the Redis client without TLS.
 	redisClient = redis.NewClient(&redis.Options{
-		Addr:     "elora-chat-redis-cache-o9mthe.serverless.use1.cache.amazonaws.com:6379", // Localhost if running Redis locally
-		Password: "",                                                                       // No password if not set
-		DB:       0,                                                                        // Default DB
-		TLSConfig: &tls.Config{
-			ServerName: "elora-chat-redis-cache-o9mthe.serverless.use1.cache.amazonaws.com",
-		},
+		Addr:     "redis-16438.c325.us-east-1-4.ec2.cloud.redislabs.com:16438",
+		Password: "oJc6z3chOy7wbMSUKuWj2feIrTF9pci3", // The password for the Redis server (if required)
+		DB:       0,                                  // Default DB
 	})
+
+	// Context for Redis operations
+	ctx := context.Background()
 
 	// Check the Redis connection
 	_, err := redisClient.Ping(ctx).Result()
