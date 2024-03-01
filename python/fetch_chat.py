@@ -15,8 +15,10 @@ def fetch_chat(url, message_groups=None):
             color = "#808080"
 
             if "colour" in message:  # Twitch messages
+                author = message["author"]["display_name"]
                 color = message["colour"]
             else:  # YouTube messages
+                author = message["author"]["name"]
                 for badge in message["author"].get("badges", []):
                     title = badge["title"].lower()
                     if "owner" in title:
@@ -29,7 +31,7 @@ def fetch_chat(url, message_groups=None):
             # Include color in the message data
             message_data = {
                 "message": message["message"],
-                "author": message["author"]["name"],
+                "author": author,
                 "emotes": message.get("emotes", []),
                 "badges": message["author"].get("badges", []),
                 "colour": color,  # Add the color here
