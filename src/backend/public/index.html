@@ -84,6 +84,15 @@
       let processing = false;
 
       function initializeWebSocket() {
+        if (
+          ws &&
+          (ws.readyState === WebSocket.OPEN ||
+            ws.readyState === WebSocket.CONNECTING)
+        ) {
+          console.log("WebSocket is already open or connecting.");
+          return;
+        }
+
         ws = new WebSocket("wss://elora.chat/ws/chat");
 
         ws.onopen = function () {
@@ -113,6 +122,7 @@
 
         ws.onclose = function () {
           console.log("WebSocket Connection closed");
+          setTimeout(initializeWebSocket, 5000); // Attempt to reconnect after 5 seconds
         };
       }
 
@@ -183,14 +193,28 @@
       // Initialize WebSocket connection
       initializeWebSocket();
 
-      // Handle visibility change
-      document.addEventListener("visibilitychange", function () {
+      // Visibility change event handler
+      function handleVisibilityChange() {
         if (document.hidden) {
-          console.log("Tab is inactive, closing WebSocket connection.");
-          ws.close(); // Close the WebSocket connection
+          console.log("Tab is inactive");
+          // Do not close WebSocket; let the server handle timeouts
         } else {
-          console.log("Tab is active, opening WebSocket connection.");
-          initializeWebSocket(); // Re-initialize the WebSocket connection
+          console.log("Tab is active, checking WebSocket connection.");
+          initializeWebSocket(); // Ensure WebSocket is connected
+        }
+      }
+
+      // Event listeners for page visibility and other relevant events
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      window.addEventListener("pageshow", handleVisibilityChange); // Triggered when navigating to a page
+      window.addEventListener("online", handleVisibilityChange); // Triggered when going online
+      window.addEventListener("focus", handleVisibilityChange); // Triggered when tab gains focus
+
+      // Optional: Clear WebSocket reference on page unload
+      window.addEventListener("beforeunload", function () {
+        if (ws) {
+          ws.close();
+          ws = null;
         }
       });
     </script>

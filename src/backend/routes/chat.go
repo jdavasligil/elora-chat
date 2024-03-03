@@ -60,9 +60,11 @@ type Message struct {
 func init() {
 	// Initialize the Redis client without TLS.
 	redisClient = redis.NewClient(&redis.Options{
-		Addr:     "redis-16438.c325.us-east-1-4.ec2.cloud.redislabs.com:16438",
-		Password: "oJc6z3chOy7wbMSUKuWj2feIrTF9pci3", // The password for the Redis server (if required)
-		DB:       0,                                  // Default DB
+		Addr:            "redis-16438.c325.us-east-1-4.ec2.cloud.redislabs.com:16438",
+		Password:        "fK7RG4Hv9wuZ5Qi06moy1TAM4t0q9Q0s", // The password for the Redis server (if required)
+		DB:              0,                                  // Default DB
+		ConnMaxIdleTime: 5 * time.Minute,                    // Maximum amount of time a connection may be idle.
+		ConnMaxLifetime: 30 * time.Minute,                   // Maximum amount of time a connection may be reused.
 	})
 
 	// Context for Redis operations
@@ -137,33 +139,50 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 	pubsub := redisClient.Subscribe(ctx, "chatMessages")
 	defer pubsub.Close()
 
-	// Go routine to receive messages.
+	// Channel to signal closure of WebSocket connection
+	done := make(chan struct{})
+
+	// Go routine to receive messages from Redis and forward them to WebSocket
 	go func() {
 		ch := pubsub.Channel()
-		for msg := range ch {
-			// Use the WebSocket connection to send the message to the client.
-			if err := conn.WriteMessage(websocket.TextMessage, []byte(msg.Payload)); err != nil {
-				log.Println("WebSocket write error:", err)
+		for {
+			select {
+			case msg := <-ch:
+				if err := conn.WriteMessage(websocket.TextMessage, []byte(msg.Payload)); err != nil {
+					log.Println("WebSocket write error:", err)
+					return
+				}
+			case <-done:
 				return
 			}
 		}
 	}()
 
-	// Start a goroutine to send keep-alive messages
+	// Keep-alive go routine
 	go func() {
+		ticker := time.NewTicker(20 * time.Second)
+		defer ticker.Stop()
+
 		for {
-			time.Sleep(20 * time.Second) // Send keep-alive message every 20 seconds
-			if err := conn.WriteMessage(websocket.TextMessage, []byte("__keepalive__")); err != nil {
-				log.Println("Failed to send keep-alive message:", err)
-				break // Exit the loop if there's an error (e.g., connection closed)
+			select {
+			case <-ticker.C:
+				if err := conn.WriteMessage(websocket.TextMessage, []byte("__keepalive__")); err != nil {
+					log.Println("Failed to send keep-alive message:", err)
+					return
+				}
+			case <-done:
+				return
 			}
 		}
 	}()
 
-	// Your existing code for keeping the connection open or handling other aspects of the WebSocket
+	// Read loop to keep connection alive and detect close
 	for {
-		// Example blocking pattern to keep the connection open
-		time.Sleep(10 * time.Second)
+		if _, _, err := conn.ReadMessage(); err != nil {
+			log.Println("WebSocket read error, closing connection:", err)
+			close(done)
+			break
+		}
 	}
 }
 
