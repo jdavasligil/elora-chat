@@ -113,10 +113,15 @@ func StartChatFetch(urls []string) {
 					continue
 				}
 
-				// Publish the modified message to Redis.
-				err = redisClient.Publish(ctx, "chatMessages", modifiedMessage).Err()
+				// Add the modified message to Redis Stream.
+				_, err = redisClient.XAdd(ctx, &redis.XAddArgs{
+					Stream: "chatMessages",
+					Values: map[string]interface{}{"message": string(modifiedMessage)},
+					MaxLen: 100,
+					Approx: true,
+				}).Result()
 				if err != nil {
-					log.Printf("Failed to publish message: %v, Modified message: %s\n", err, string(modifiedMessage))
+					log.Printf("Failed to add message to stream: %v, Modified message: %s\n", err, string(modifiedMessage))
 				}
 			}
 			if err := scanner.Err(); err != nil {
@@ -135,25 +140,51 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	// Subscribe to the Redis channel.
-	pubsub := redisClient.Subscribe(ctx, "chatMessages")
-	defer pubsub.Close()
-
 	// Channel to signal closure of WebSocket connection
 	done := make(chan struct{})
 
-	// Go routine to receive messages from Redis and forward them to WebSocket
+	lastID := "0" // Start from the beginning of the stream
+
+	// Read the last 100 messages from the stream to send to the client immediately.
+	streams, err := redisClient.XRevRangeN(ctx, "chatMessages", "+", "-", 100).Result()
+	if err != nil {
+		log.Printf("Failed to read messages from stream: %v\n", err)
+		return
+	}
+
+	// Send the messages in reverse order so the newest will be at the bottom
+	for i := len(streams) - 1; i >= 0; i-- {
+		message := streams[i]
+		if err := conn.WriteMessage(websocket.TextMessage, []byte(message.Values["message"].(string))); err != nil {
+			log.Println("WebSocket write error:", err)
+			return
+		}
+		if message.ID > lastID {
+			lastID = message.ID // Update last ID to the newest message
+		}
+	}
+
+	// Go routine to receive new messages from Redis Stream and forward them to WebSocket
 	go func() {
-		ch := pubsub.Channel()
 		for {
-			select {
-			case msg := <-ch:
-				if err := conn.WriteMessage(websocket.TextMessage, []byte(msg.Payload)); err != nil {
-					log.Println("WebSocket write error:", err)
-					return
-				}
-			case <-done:
+			streams, err := redisClient.XRead(ctx, &redis.XReadArgs{
+				Streams: []string{"chatMessages", lastID},
+				Block:   0,
+			}).Result()
+
+			if err != nil {
+				log.Println("Error reading from stream:", err)
 				return
+			}
+
+			for _, stream := range streams {
+				for _, message := range stream.Messages {
+					if err := conn.WriteMessage(websocket.TextMessage, []byte(message.Values["message"].(string))); err != nil {
+						log.Println("WebSocket write error:", err)
+						return
+					}
+					lastID = message.ID // Update last ID to the newest message
+				}
 			}
 		}
 	}()

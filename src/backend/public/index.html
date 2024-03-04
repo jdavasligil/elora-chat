@@ -132,6 +132,12 @@
           return;
         }
 
+        // If there's a large number of messages, only keep the last N
+        const N = 30;
+        if (messageQueue.length > N) {
+          messageQueue.splice(0, messageQueue.length - N);
+        }
+
         processing = true;
         const message = messageQueue.shift();
         const container = document.getElementById("chat-container");
@@ -185,6 +191,18 @@
           `<b><span style="color: ${message.colour}">${message.author}:</span></b> ${messageWithEmotes}`;
         container.appendChild(messageElement);
         container.scrollTop = container.scrollHeight; // Scroll to the bottom
+
+        // Limit the number of messages in the chat container to 20
+        let chatMessages = container.querySelectorAll(".chat-message");
+        while (chatMessages.length > 20) {
+          const oldestMessage = chatMessages[0];
+          if (oldestMessage) {
+            // Make sure the oldest message exists before removing it
+            oldestMessage.parentNode.removeChild(oldestMessage);
+          }
+          // Update the chatMessages NodeList after removal
+          chatMessages = container.querySelectorAll(".chat-message");
+        }
 
         // Continue processing after a delay
         setTimeout(processMessageQueue, 0); // Delay of x ms between messages
