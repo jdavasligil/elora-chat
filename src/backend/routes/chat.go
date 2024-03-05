@@ -61,10 +61,10 @@ func init() {
 	// Initialize the Redis client without TLS.
 	redisClient = redis.NewClient(&redis.Options{
 		Addr:            "redis-16438.c325.us-east-1-4.ec2.cloud.redislabs.com:16438",
-		Password:        "fK7RG4Hv9wuZ5Qi06moy1TAM4t0q9Q0s", // The password for the Redis server (if required)
-		DB:              0,                                  // Default DB
-		ConnMaxIdleTime: 5 * time.Minute,                    // Maximum amount of time a connection may be idle.
-		ConnMaxLifetime: 30 * time.Minute,                   // Maximum amount of time a connection may be reused.
+		Password:        "default pass 1", // The password for the Redis server (if required)
+		DB:              0,                // Default DB
+		ConnMaxIdleTime: 5 * time.Minute,  // Maximum amount of time a connection may be idle.
+		ConnMaxLifetime: 30 * time.Minute, // Maximum amount of time a connection may be reused.
 	})
 
 	// Context for Redis operations

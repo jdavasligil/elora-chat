@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chat Display</title>
+    <title>Pop-out Chat</title>
     <style>
       body {
         background-color: black;
@@ -12,10 +12,11 @@
         forced-color-adjust: none; /* This prevents high contrast mode from changing colors */
       }
       #chat-container {
-        height: 500px;
-        overflow-y: scroll;
+        height: 90vh; /* Full height of the viewport */
+        overflow-y: auto; /* Scrollbar appears if content overflows */
         border: 1px solid #333;
         padding: 10px;
+        margin: 0; /* Remove default margin if any */
       }
       /* Hide scrollbar for Chrome, Safari and Opera */
       #chat-container::-webkit-scrollbar {
@@ -48,16 +49,6 @@
         align-items: center;
         justify-content: space-between;
       }
-      #popoutChatBtn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-      }
-      #popoutChatBtn img {
-        height: 30px; /* Adjust as needed */
-        width: 30px; /* Adjust as needed */
-      }
       @keyframes glideInBounce {
         0% {
           transform: translateX(100%); /* Start from the right */
@@ -82,12 +73,6 @@
     </style>
   </head>
   <body>
-    <div class="header">
-      <h2>Combined Chat</h2>
-      <button id="popoutChatBtn" title="Popout Chat">
-        <img src="popout.png" alt="Popout" />
-      </button>
-    </div>
     <div id="chat-container"></div>
 
     <script>
@@ -254,18 +239,6 @@
           ws.close();
           ws = null;
         }
-      });
-
-      // Handle Popout Chat functionality
-      document.addEventListener("DOMContentLoaded", (event) => {
-        const popoutChatBtn = document.getElementById("popoutChatBtn");
-        let popoutWindow;
-
-        popoutChatBtn.addEventListener("click", () => {
-          const popoutFeatures =
-            "scrollbars=no,resizable=yes,status=no,location=no,toolbar=no,menubar=no";
-          popoutWindow = window.open("chat.html", "ChatPopout", popoutFeatures);
-        });
       });
     </script>
   </body>
