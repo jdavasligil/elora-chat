@@ -30,11 +30,14 @@ func main() {
 
 	// Start fetching chat messages
 	chatURLs := []string{
-		"https://www.twitch.tv/hp_az",
-		"https://www.youtube.com/@hp_az/live",
+		// "https://www.twitch.tv/hp_az",
+		// "https://www.youtube.com/channel/UCHToAogHtFnv2uksbDzKsYA/live", // my channel link
+		// "https://www.youtube.com/@hp_az/live", // crude live link
+		// "https://www.youtube.com/watch?v=_oMKOh8skrM", // viewer link
 		// "https://youtube.com/live/7NA555IYE24?feature=share",
 		// "https://youtube.com/live/7455sVTXUPU?feature=share",
 		// "https://www.youtube.com/watch?v=jfKfPfyJRdk", // lofi girl live
+		// "http://youtube.com/channel/UCSJ4gkVC6NrvII8umztf0Ow/live",
 		// "https://www.twitch.tv/rifftrax",
 		// "https://www.youtube.com/watch?v=39VeO9p7Vn0", // dayo live test stream
 		// "https://www.youtube.com/live/6sjf7R0o-ss?si=WkdXIOu83_7Sglk2&t=7500", // ludwig live test stream
@@ -45,7 +48,8 @@ func main() {
 		// "https://www.twitch.tv/jakenbakeLIVE",
 		// "https://www.twitch.tv/Knut",
 		// "https://www.youtube.com/@dayoman/live",
-		// "https://www.twitch.tv/dayoman",
+		"http://youtube.com/channel/UC2c4NxvHnbXs3NLpCm641ew/live",
+		"https://www.twitch.tv/dayoman",
 		// "https://www.twitch.tv/forsen", // basically a hard code for constant chats
 		// "https://www.twitch.tv/jynxzi", // basically a hard code for constant chats
 		// "https://www.youtube.com/watch?v=Gtqw9b8g2wk",
@@ -55,6 +59,8 @@ func main() {
 		// "https://youtube.com/live/JHqR9hq70No?feature=share",
 		// "https://www.twitch.tv/papaplatte",
 		// "https://www.youtube.com/watch?v=REmPV-EPwPc", // ninja yt
+		// "https://www.twitch.tv/nutty",
+		// "https://www.youtube.com/@nuttylmao/live",
 	}
 	routes.StartChatFetch(chatURLs)
 

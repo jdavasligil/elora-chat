@@ -61,7 +61,7 @@ func init() {
 	// Initialize the Redis client without TLS.
 	redisClient = redis.NewClient(&redis.Options{
 		Addr:            "redis-16438.c325.us-east-1-4.ec2.cloud.redislabs.com:16438",
-		Password:        "default pass 1", // The password for the Redis server (if required)
+		Password:        "default pass 2", // The password for the Redis server (if required)
 		DB:              0,                // Default DB
 		ConnMaxIdleTime: 5 * time.Minute,  // Maximum amount of time a connection may be idle.
 		ConnMaxLifetime: 30 * time.Minute, // Maximum amount of time a connection may be reused.
@@ -180,7 +180,9 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 			for _, stream := range streams {
 				for _, message := range stream.Messages {
 					if err := conn.WriteMessage(websocket.TextMessage, []byte(message.Values["message"].(string))); err != nil {
-						log.Println("WebSocket write error:", err)
+						if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
+							log.Println("WebSocket write error:", err)
+						}
 						return
 					}
 					lastID = message.ID // Update last ID to the newest message
@@ -210,7 +212,9 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 	// Read loop to keep connection alive and detect close
 	for {
 		if _, _, err := conn.ReadMessage(); err != nil {
-			log.Println("WebSocket read error, closing connection:", err)
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
+				log.Println("WebSocket read error, closing connection:", err)
+			}
 			close(done)
 			break
 		}
