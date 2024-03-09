@@ -5,7 +5,7 @@ body {
   forced-color-adjust: none; /* This prevents high contrast mode from changing colors */
 }
 #chat-container {
-  height: 90vh; /* Full height of the viewport */
+  height: 80vh;
   overflow-y: scroll;
   border: 1px solid #333;
   padding: 10px;

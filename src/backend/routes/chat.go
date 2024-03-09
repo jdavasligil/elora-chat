@@ -64,6 +64,8 @@ func init() {
 		Addr:            os.Getenv("REDIS_ADDR"),
 		Password:        os.Getenv("REDIS_PASSWORD"), // The password for the Redis server (if required)
 		DB:              0,                           // Default DB
+		PoolSize:        200,                         // Adjusted pool size
+		MinIdleConns:    10,                          // Maintain a minimum of 10 idle connections
 		ConnMaxIdleTime: 5 * time.Minute,             // Maximum amount of time a connection may be idle.
 		ConnMaxLifetime: 30 * time.Minute,            // Maximum amount of time a connection may be reused.
 	})
