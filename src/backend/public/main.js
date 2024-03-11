@@ -19,7 +19,8 @@ function initializeWebSocket() {
     return;
   }
 
-  ws = new WebSocket("wss://elora.chat/ws/chat");
+  const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/chat`);
 
   ws.onopen = function () {
     console.log("WebSocket Connection established");
