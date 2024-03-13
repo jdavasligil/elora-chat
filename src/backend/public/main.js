@@ -163,14 +163,24 @@ window.addEventListener("beforeunload", function () {
   }
 });
 
-// Handle Popout Chat functionality
+// Handle Popout Chat/Refresh functionality
 document.addEventListener("DOMContentLoaded", (event) => {
   const popoutChatBtn = document.getElementById("popoutChatBtn");
+  const refreshServerBtn = document.getElementById("refreshServerBtn");
   let popoutWindow;
 
   popoutChatBtn.addEventListener("click", () => {
     const popoutFeatures =
       "scrollbars=no,resizable=yes,status=no,location=no,toolbar=no,menubar=no";
     popoutWindow = window.open("chat.html", "ChatPopout", popoutFeatures);
+  });
+
+  refreshServerBtn.addEventListener("click", () => {
+    fetch("/restart-server", { method: "POST" })
+      .then((response) => response.json())
+      .then((data) => console.log(data))
+      .catch((error) => {
+        console.error("Error:", error);
+      });
   });
 });

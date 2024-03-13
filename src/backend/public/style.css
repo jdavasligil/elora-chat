@@ -41,6 +41,12 @@ body {
   align-items: center;
   justify-content: space-between;
 }
+.buttons {
+  display: flex;
+  align-items: right;
+  justify-content: space-between;
+  gap: 10px;
+}
 #popoutChatBtn {
   background: none;
   border: none;
@@ -48,6 +54,16 @@ body {
   padding: 0;
 }
 #popoutChatBtn img {
+  height: 30px; /* Adjust as needed */
+  width: 30px; /* Adjust as needed */
+}
+#refreshServerBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+#refreshServerBtn img {
   height: 30px; /* Adjust as needed */
   width: 30px; /* Adjust as needed */
 }

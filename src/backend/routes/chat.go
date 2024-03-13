@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -20,6 +21,7 @@ import (
 // Initialize a Redis client as a global variable.
 var redisClient *redis.Client
 var ctx = context.Background()
+var chatFetchCmds = make(map[string]*exec.Cmd)
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -80,57 +82,80 @@ func init() {
 	}
 }
 
-// StartChatFetch starts fetching chat messages for each provided URL
 func StartChatFetch(urls []string) {
-	const pythonExecPath = "/usr/local/bin/python3"
-	const fetchChatScript = "/app/python/fetch_chat.py"
+	pythonExecPath := "/usr/local/bin/python3"
+	fetchChatScript := "/app/python/fetch_chat.py"
 
 	for _, url := range urls {
-		go func(url string) {
-			cmd := exec.Command(pythonExecPath, "-u", fetchChatScript, url)
-			stdout, err := cmd.StdoutPipe()
-			if err != nil {
-				log.Fatal("Failed to create stdout pipe:", err)
-			}
-			if err := cmd.Start(); err != nil {
-				log.Fatal("Failed to start command:", err)
-			}
-			scanner := bufio.NewScanner(stdout)
-			for scanner.Scan() {
-				var msg Message
-				rawMessage := scanner.Bytes()
-				if err := json.Unmarshal(rawMessage, &msg); err != nil {
-					log.Printf("Failed to unmarshal message: %v, Raw message: %s\n", err, string(rawMessage))
-					continue
-				}
-				if strings.Contains(url, "twitch.tv") {
-					msg.Source = "Twitch"
-				} else if strings.Contains(url, "youtube.com") {
-					msg.Source = "YouTube"
-				}
+		go monitorAndRestartChatFetch(url, pythonExecPath, fetchChatScript)
+	}
+}
 
-				// Re-marshal the message with the Source set.
-				modifiedMessage, err := json.Marshal(msg)
-				if err != nil {
-					log.Printf("Failed to marshal message: %v, Message: %#v\n", err, msg)
-					continue
-				}
+func monitorAndRestartChatFetch(url, pythonExecPath, fetchChatScript string) {
+	for {
+		cmd := startChatFetch(url, pythonExecPath, fetchChatScript)
+		chatFetchCmds[url] = cmd
 
-				// Add the modified message to Redis Stream.
-				_, err = redisClient.XAdd(ctx, &redis.XAddArgs{
-					Stream: "chatMessages",
-					Values: map[string]interface{}{"message": string(modifiedMessage)},
-					MaxLen: 100,
-					Approx: true,
-				}).Result()
-				if err != nil {
-					log.Printf("Failed to add message to stream: %v, Modified message: %s\n", err, string(modifiedMessage))
-				}
-			}
-			if err := scanner.Err(); err != nil {
-				log.Println("Error reading standard output:", err)
-			}
-		}(url)
+		err := cmd.Wait() // Waits for the command to exit
+		if err != nil {
+			log.Printf("Chat fetch for %s stopped: %v", url, err)
+		}
+
+		// Wait for a short duration before restarting to prevent rapid restart loops
+		time.Sleep(10 * time.Second)
+	}
+}
+
+func startChatFetch(url, pythonExecPath, fetchChatScript string) *exec.Cmd {
+	cmd := exec.Command(pythonExecPath, "-u", fetchChatScript, url)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Fatal("Failed to create stdout pipe:", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		log.Fatal("Failed to start command:", err)
+	}
+
+	go processChatOutput(stdout, url)
+	return cmd
+}
+
+func processChatOutput(stdout io.ReadCloser, url string) {
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		var msg Message
+		rawMessage := scanner.Bytes()
+		if err := json.Unmarshal(rawMessage, &msg); err != nil {
+			log.Printf("Failed to unmarshal message: %v, Raw message: %s\n", err, string(rawMessage))
+			continue
+		}
+		if strings.Contains(url, "twitch.tv") {
+			msg.Source = "Twitch"
+		} else if strings.Contains(url, "youtube.com") {
+			msg.Source = "YouTube"
+		}
+
+		// Re-marshal the message with the Source set.
+		modifiedMessage, err := json.Marshal(msg)
+		if err != nil {
+			log.Printf("Failed to marshal message: %v, Message: %#v\n", err, msg)
+			continue
+		}
+
+		// Add the modified message to Redis Stream.
+		_, err = redisClient.XAdd(ctx, &redis.XAddArgs{
+			Stream: "chatMessages",
+			Values: map[string]interface{}{"message": string(modifiedMessage)},
+			MaxLen: 100,
+			Approx: true,
+		}).Result()
+		if err != nil {
+			log.Printf("Failed to add message to stream: %v, Modified message: %s\n", err, string(modifiedMessage))
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Println("Error reading standard output:", err)
 	}
 }
 
@@ -250,8 +275,22 @@ func ImageProxy(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, resp.Body)
 }
 
+// StopChatFetches stops all ongoing chat fetch commands
+func StopChatFetches(w http.ResponseWriter, r *http.Request) {
+	for _, cmd := range chatFetchCmds {
+		if cmd != nil && cmd.Process != nil {
+			err := cmd.Process.Kill()
+			if err != nil {
+				log.Printf("Failed to stop chat fetch command: %v", err)
+			}
+		}
+	}
+	fmt.Fprintln(w, "Chat fetch commands stopped. Restarting...")
+}
+
 // SetupChatRoutes sets up WebSocket routes
 func SetupChatRoutes(router *mux.Router) {
 	router.HandleFunc("/ws/chat", StreamChat).Methods("GET")
-	router.HandleFunc("/imageproxy", ImageProxy).Methods("GET") // New proxy route
+	router.HandleFunc("/imageproxy", ImageProxy).Methods("GET")           // Existing proxy route
+	router.HandleFunc("/restart-server", StopChatFetches).Methods("POST") // New restart route
 }
