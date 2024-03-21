@@ -10,30 +10,34 @@ let ws;
 const messageQueue = [];
 let processing = false;
 
+// Call initializeWebSocket() only if the user is logged in
 function initializeWebSocket() {
+  const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const wsUrl = `${wsProtocol}://${window.location.host}/ws/chat`;
   if (
     ws &&
     (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)
   ) {
-    console.log("WebSocket is already open or connecting.");
+    console.log(
+      "WebSocket is already connected or connecting. No action taken."
+    );
     return;
   }
 
-  const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-  ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/chat`);
+  ws = new WebSocket(wsUrl);
 
   ws.onopen = function () {
     console.log("WebSocket Connection established");
   };
 
   ws.onmessage = function (event) {
-    var msg = event.data;
+    const msg = event.data;
     if (msg === "__keepalive__") {
       return;
     }
 
     try {
-      var parsedMsg = JSON.parse(msg);
+      const parsedMsg = JSON.parse(msg);
       messageQueue.push(parsedMsg);
       if (!processing) {
         processMessageQueue();
@@ -44,12 +48,13 @@ function initializeWebSocket() {
   };
 
   ws.onerror = function (error) {
-    console.log("WebSocket Error: " + error);
+    console.error("WebSocket Error:", error);
   };
 
   ws.onclose = function () {
-    console.log("WebSocket Connection closed");
-    setTimeout(initializeWebSocket, 5000); // Attempt to reconnect after 5 seconds
+    console.log("WebSocket Connection closed. Attempting to reconnect...");
+    // Removed the setTimeout here to avoid automatic reconnection.
+    // The reconnection attempt will be managed by the visibility change or manual triggers.
   };
 }
 
@@ -135,52 +140,95 @@ function processMessageQueue() {
   setTimeout(processMessageQueue, 0); // Delay of x ms between messages
 }
 
-// Initialize WebSocket connection
-initializeWebSocket();
-
-// Visibility change event handler
-function handleVisibilityChange() {
-  if (document.hidden) {
-    console.log("Tab is inactive");
-    // Do not close WebSocket; let the server handle timeouts
-  } else {
-    console.log("Tab is active, checking WebSocket connection.");
-    initializeWebSocket(); // Ensure WebSocket is connected
-  }
+function checkLoginStatus() {
+  // Use Fetch API to check session validity with the backend
+  fetch("/auth/check-session", {
+    method: "GET",
+    credentials: "include", // Important for cookies to be sent with the request
+  })
+    .then((response) => {
+      if (response.ok) {
+        updateUIForLoggedInUser();
+        if (!ws || ws.readyState === WebSocket.CLOSED) {
+          initializeWebSocket();
+        }
+      } else {
+        updateUIForLoggedOutUser();
+      }
+    })
+    .catch((error) => console.error("Error checking login status:", error));
 }
 
-// Event listeners for page visibility and other relevant events
-document.addEventListener("visibilitychange", handleVisibilityChange);
-window.addEventListener("pageshow", handleVisibilityChange); // Triggered when navigating to a page
-window.addEventListener("online", handleVisibilityChange); // Triggered when going online
-window.addEventListener("focus", handleVisibilityChange); // Triggered when tab gains focus
+function updateUIForLoggedInUser() {
+  document.getElementById("loginButton").style.display = "none";
+  document.getElementById("logoutButton").style.display = "block";
+}
 
-// Optional: Clear WebSocket reference on page unload
-window.addEventListener("beforeunload", function () {
-  if (ws) {
-    ws.close();
-    ws = null;
-  }
-});
+function updateUIForLoggedOutUser() {
+  document.getElementById("loginButton").style.display = "block";
+  document.getElementById("logoutButton").style.display = "none";
+}
 
-// Handle Popout Chat/Refresh functionality
-document.addEventListener("DOMContentLoaded", (event) => {
+function logout() {
+  // Correctly handle logout by making a request to the backend endpoint
+  fetch("/auth/logout", {
+    method: "POST",
+    credentials: "include", // Important for cookies to be sent with the request
+  })
+    .then((response) => {
+      if (response.ok) {
+        localStorage.removeItem("sessionToken"); // Optionally remove from localStorage if used elsewhere
+        updateUIForLoggedOutUser();
+        window.location.href = "/";
+      }
+    })
+    .catch((error) => console.error("Error logging out:", error));
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  checkLoginStatus();
+
+  document.getElementById("logoutButton").addEventListener("click", logout);
+  document.getElementById("loginButton").addEventListener("click", () => {
+    window.location.href = "/login";
+  });
+
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  window.addEventListener("pageshow", handleVisibilityChange);
+  window.addEventListener("online", handleVisibilityChange);
+  window.addEventListener("focus", handleVisibilityChange);
+
+  window.addEventListener("beforeunload", function () {
+    if (ws) {
+      ws.close();
+      ws = null;
+    }
+  });
+
   const popoutChatBtn = document.getElementById("popoutChatBtn");
   const refreshServerBtn = document.getElementById("refreshServerBtn");
-  let popoutWindow;
 
   popoutChatBtn.addEventListener("click", () => {
     const popoutFeatures =
       "scrollbars=no,resizable=yes,status=no,location=no,toolbar=no,menubar=no";
-    popoutWindow = window.open("chat.html", "ChatPopout", popoutFeatures);
+    window.open("chat.html", "ChatPopout", popoutFeatures);
   });
 
   refreshServerBtn.addEventListener("click", () => {
     fetch("/restart-server", { method: "POST" })
       .then((response) => response.json())
       .then((data) => console.log(data))
-      .catch((error) => {
-        console.error("Error:", error);
-      });
+      .catch((error) => console.error("Error:", error));
   });
 });
+
+function handleVisibilityChange() {
+  if (!document.hidden) {
+    console.log("Tab is active, checking WebSocket connection.");
+    if (checkLoginStatus()) {
+      if (!ws || ws.readyState === WebSocket.CLOSED) {
+        initializeWebSocket();
+      }
+    }
+  }
+}

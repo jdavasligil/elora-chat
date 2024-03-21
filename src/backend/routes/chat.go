@@ -290,7 +290,12 @@ func StopChatFetches(w http.ResponseWriter, r *http.Request) {
 
 // SetupChatRoutes sets up WebSocket routes
 func SetupChatRoutes(router *mux.Router) {
-	router.HandleFunc("/ws/chat", StreamChat).Methods("GET")
-	router.HandleFunc("/imageproxy", ImageProxy).Methods("GET")           // Existing proxy route
-	router.HandleFunc("/restart-server", StopChatFetches).Methods("POST") // New restart route
+	// Subrouter for chat routes that require authentication
+	chatRoutes := router.PathPrefix("").Subrouter()
+	chatRoutes.Use(SessionMiddleware)
+
+	// Add protected chat routes to chatRoutes
+	chatRoutes.HandleFunc("/ws/chat", StreamChat).Methods("GET")
+	chatRoutes.HandleFunc("/imageproxy", ImageProxy).Methods("GET")
+	chatRoutes.HandleFunc("/restart-server", StopChatFetches).Methods("POST")
 }
