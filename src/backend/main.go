@@ -23,6 +23,7 @@ func main() {
 
 	// Set up WebSocket chat routes
 	routes.SetupChatRoutes(r)
+	routes.SetupAuthRoutes(r)
 
 	// Serve static files from the "public" directory
 	fs := http.FileServer(http.Dir("public"))

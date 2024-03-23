@@ -7,54 +7,89 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/ravener/discord-oauth2"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/twitch"
 )
 
-// Setup the OAuth2 config with Discord's endpoints and your credentials.
-var (
-	clientID     = "1215459352987832350"
-	clientSecret = "FDRj6lnFl7LoCQsVjIl84zA-rVtabiBN"
-	redirectURL  = "http://localhost:8080/callback"
-	oauth2Config = &oauth2.Config{
-		RedirectURL:  redirectURL,
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		Scopes:       []string{"identify", "email"},
-		Endpoint:     discord.Endpoint,
-	}
-)
+// Twitch OAuth configuration
+var twitchOAuthConfig = &oauth2.Config{
+	ClientID:     "yzn1qir54by5q528tinhfranwu6o8c",
+	ClientSecret: "4rvvit22eqqia76dwekw4s2godt5hy",
+	RedirectURL:  "http://localhost:8080/callback/twitch",
+	Scopes:       []string{"user:read:email"}, // Example scope, adjust as needed
+	Endpoint:     twitch.Endpoint,             // Make sure to import "golang.org/x/oauth2/twitch"
+}
 
-// loginHandler to initiate OAuth with Discord
+// YouTube OAuth configuration
+var youtubeOAuthConfig = &oauth2.Config{
+	ClientID:     "456484052696-173incl6ktid55uff5f9jboucvu742l7.apps.googleusercontent.com",
+	ClientSecret: "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",
+	RedirectURL:  "http://localhost:8080/callback/youtube",
+	Scopes:       []string{"https://www.googleapis.com/auth/userinfo.email"}, // Example scope, adjust as needed
+	Endpoint:     google.Endpoint,                                            // Make sure to import "golang.org/x/oauth2/google"
+}
+
+// loginHandler to initiate OAuth with Twitch/YouTube
 func loginHandler(w http.ResponseWriter, r *http.Request) {
+	var oauthConfig *oauth2.Config
+
+	// Determine which platform is being requested
+	switch {
+	case strings.Contains(r.URL.Path, "/twitch"):
+		oauthConfig = twitchOAuthConfig
+	case strings.Contains(r.URL.Path, "/youtube"):
+		oauthConfig = youtubeOAuthConfig
+	default:
+		http.Error(w, "Unsupported platform", http.StatusBadRequest)
+		return
+	}
+
 	state, err := generateState()
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	// Store "valid" as the state value for later validation
-	err = redisClient.Set(ctx, "oauth-state:"+state, "valid", 10*time.Minute).Err()
+
+	// Store "valid" as the state value for later validation, including which platform it's for
+	err = redisClient.Set(ctx, "oauth-state:"+state, "valid:"+oauthConfig.ClientID, 10*time.Minute).Err()
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	url := oauth2Config.AuthCodeURL(state, oauth2.AccessTypeOnline)
+
+	// Redirect to the OAuth provider's authorization page
+	url := oauthConfig.AuthCodeURL(state, oauth2.AccessTypeOnline)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-// callbackHandler for Discord's OAuth
+// callbackHandler for Twitch/YT OAuth
 func callbackHandler(w http.ResponseWriter, r *http.Request) {
+	var oauthConfig *oauth2.Config
+	var userInfoURL string
+
+	// Determine which platform the callback is for
+	switch {
+	case strings.Contains(r.URL.Path, "/twitch"):
+		oauthConfig = twitchOAuthConfig
+		userInfoURL = "https://api.twitch.tv/helix/users"
+	case strings.Contains(r.URL.Path, "/youtube"):
+		oauthConfig = youtubeOAuthConfig
+		userInfoURL = "https://www.googleapis.com/oauth2/v3/userinfo"
+	default:
+		http.Error(w, "Unsupported platform", http.StatusBadRequest)
+		return
+	}
+
 	// Check if an error query parameter is present
 	if errorReason := r.FormValue("error"); errorReason != "" {
-		// Optional: log the error reason or display it to the user
 		fmt.Printf("OAuth error: %s, Description: %s\n", errorReason, r.FormValue("error_description"))
-
-		// Redirect back to the main page or an appropriate error page
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
@@ -67,24 +102,47 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Exchange the auth code for an access token
-	token, err := oauth2Config.Exchange(context.Background(), r.FormValue("code"))
+	token, err := oauthConfig.Exchange(context.Background(), r.FormValue("code"))
 	if err != nil {
 		http.Error(w, "Failed to exchange token: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Use the access token to access the Discord API
-	client := oauth2Config.Client(context.Background(), token)
-	res, err := client.Get(discord.Endpoint.TokenURL + "/users/@me")
-	if err != nil {
-		http.Error(w, "Failed to get user info: "+err.Error(), http.StatusInternalServerError)
+	// Use the access token to fetch user information from the appropriate API
+	client := oauthConfig.Client(context.Background(), token)
+
+	var req *http.Request
+	var res *http.Response
+
+	switch {
+	case strings.Contains(r.URL.Path, "/twitch"):
+		// For Twitch, manually set the headers and create the request
+		userInfoURL = "https://api.twitch.tv/helix/users"
+		req, err = http.NewRequest("GET", userInfoURL, nil)
+		if err != nil {
+			http.Error(w, "Failed to create request: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// Set necessary headers for Twitch API
+		req.Header.Set("Client-ID", oauthConfig.ClientID)
+		req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+		res, err = http.DefaultClient.Do(req)
+
+	case strings.Contains(r.URL.Path, "/youtube"):
+		// YouTube login works fine, keep this block unchanged
+		userInfoURL = "https://www.googleapis.com/oauth2/v3/userinfo"
+		res, err = client.Get(userInfoURL)
+	}
+
+	if err != nil || res.StatusCode != 200 {
+		http.Error(w, "Failed to get user info", http.StatusInternalServerError)
 		return
 	}
 	defer res.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		http.Error(w, "Failed to read response: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Failed to read response body", http.StatusInternalServerError)
 		return
 	}
 
@@ -144,7 +202,8 @@ func validateState(state string) bool {
 	// Delete the one-time-use state from Redis after validation
 	redisClient.Del(ctx, key)
 
-	if err != nil || storedState != "valid" {
+	// Check if the stored state value starts with "valid"
+	if err != nil || !strings.HasPrefix(storedState, "valid") {
 		return false
 	}
 	return true
@@ -199,7 +258,9 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 		sessionToken := cookie.Value
 		_, err := redisClient.Del(ctx, fmt.Sprintf("session:%s", sessionToken)).Result()
 		if err != nil {
-			// Handle error (optional)
+			// Update this error handling with best practices
+			http.Error(w, "Error logging out", http.StatusBadRequest)
+			return
 		}
 	}
 
@@ -219,8 +280,10 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func SetupAuthRoutes(router *mux.Router) {
 	// Existing setup...
-	router.HandleFunc("/login", loginHandler)
-	router.HandleFunc("/callback", callbackHandler)
+	router.HandleFunc("/login/twitch", loginHandler).Methods("GET")
+	router.HandleFunc("/login/youtube", loginHandler).Methods("GET")
+	router.HandleFunc("/callback/twitch", callbackHandler)
+	router.HandleFunc("/callback/youtube", callbackHandler)
 
 	// Subrouter for routes that require authentication
 	authRoutes := router.PathPrefix("/auth").Subrouter()
