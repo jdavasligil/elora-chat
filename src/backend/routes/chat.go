@@ -161,6 +161,7 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 
 // StreamChat initializes a WebSocket connection and streams chat messages
 func StreamChat(w http.ResponseWriter, r *http.Request) {
+	log.Println("StreamChat triggered")
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Print("WebSocket upgrade error:", err)
@@ -207,6 +208,8 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 
 			for _, stream := range streams {
 				for _, message := range stream.Messages {
+					// Before sending a message to the client
+					// log.Printf("Sending message to client: %s\n", message)
 					if err := conn.WriteMessage(websocket.TextMessage, []byte(message.Values["message"].(string))); err != nil {
 						if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
 							log.Println("WebSocket write error:", err)

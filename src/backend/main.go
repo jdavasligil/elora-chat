@@ -24,6 +24,7 @@ func main() {
 	// Set up WebSocket chat routes
 	routes.SetupChatRoutes(r)
 	routes.SetupAuthRoutes(r)
+	routes.SetupSendRoutes(r)
 
 	// Serve static files from the "public" directory
 	fs := http.FileServer(http.Dir("public"))
@@ -48,9 +49,9 @@ func main() {
 		// "https://www.twitch.tv/Quin69",
 		// "https://www.twitch.tv/jakenbakeLIVE",
 		// "https://www.twitch.tv/Knut",
-		// "https://www.youtube.com/@dayoman/live",
+		"https://www.youtube.com/@dayoman/live",
 		"http://youtube.com/channel/UC2c4NxvHnbXs3NLpCm641ew/live",
-		"https://www.twitch.tv/dayoman",
+		// "https://www.twitch.tv/dayoman",
 		// "https://www.twitch.tv/forsen", // basically a hard code for constant chats
 		// "https://www.twitch.tv/jynxzi", // basically a hard code for constant chats
 		// "https://www.youtube.com/watch?v=Gtqw9b8g2wk",

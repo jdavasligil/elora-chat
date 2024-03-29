@@ -12,6 +12,7 @@ let processing = false;
 
 // Call initializeWebSocket() only if the user is logged in
 function initializeWebSocket() {
+  console.log("Initializing WebSocket");
   const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
   const wsUrl = `${wsProtocol}://${window.location.host}/ws/chat`;
   if (
@@ -24,6 +25,7 @@ function initializeWebSocket() {
     return;
   }
 
+  console.log("WebSocket URL:", wsUrl);
   ws = new WebSocket(wsUrl);
 
   ws.onopen = function () {
@@ -31,6 +33,7 @@ function initializeWebSocket() {
   };
 
   ws.onmessage = function (event) {
+    // console.log("Message received: ", event.data);
     const msg = event.data;
     if (msg === "__keepalive__") {
       return;
@@ -59,6 +62,7 @@ function initializeWebSocket() {
 }
 
 function processMessageQueue() {
+  // console.log("Processing message queue", messageQueue);
   if (messageQueue.length === 0) {
     processing = false;
     return;
@@ -141,37 +145,64 @@ function processMessageQueue() {
 }
 
 function checkLoginStatus() {
-  // Use Fetch API to check session validity with the backend
-  fetch("/auth/check-session", {
+  fetch("/check-session", {
     method: "GET",
     credentials: "include", // Important for cookies to be sent with the request
   })
     .then((response) => {
       if (response.ok) {
-        updateUIForLoggedInUser();
-        if (!ws || ws.readyState === WebSocket.CLOSED) {
-          initializeWebSocket();
-        }
+        return response.json(); // Process the body of the response
+      } else {
+        throw new Error("Session check failed");
+      }
+    })
+    .then((sessionData) => {
+      if (sessionData.services && sessionData.services.length > 0) {
+        updateUIForLoggedInUser(sessionData.services);
+        initializeWebSocket(); // Initialize WebSocket connection here
       } else {
         updateUIForLoggedOutUser();
       }
     })
-    .catch((error) => console.error("Error checking login status:", error));
+    .catch((error) => {
+      console.error("Error checking login status:", error);
+      updateUIForLoggedOutUser();
+    });
 }
 
-function updateUIForLoggedInUser() {
-  document.getElementById("loginButton").style.display = "none";
+function updateUIForLoggedInUser(loggedInServices) {
+  // Hide or show the login buttons based on the loggedInService parameter
+  const twitchLoginButton = document.getElementById("twitchLoginButton");
+  const youtubeLoginButton = document.getElementById("youtubeLoginButton");
+
+  // Assuming 'loggedInService' is a string that indicates which service is logged in
+  // For example, it could be "twitch", "youtube", or "both"
+  if (loggedInServices.includes("twitch")) {
+    twitchLoginButton.style.display = "none";
+  } else {
+    twitchLoginButton.style.display = "block";
+  }
+
+  if (loggedInServices.includes("youtube")) {
+    youtubeLoginButton.style.display = "none";
+  } else {
+    youtubeLoginButton.style.display = "block";
+  }
+
+  // Always show the logout button if the user is logged into any service
   document.getElementById("logoutButton").style.display = "block";
 }
 
 function updateUIForLoggedOutUser() {
-  document.getElementById("loginButton").style.display = "block";
+  // Show login buttons and hide the logout button
+  document.getElementById("twitchLoginButton").style.display = "block";
+  document.getElementById("youtubeLoginButton").style.display = "block";
   document.getElementById("logoutButton").style.display = "none";
 }
 
 function logout() {
   // Correctly handle logout by making a request to the backend endpoint
-  fetch("/auth/logout", {
+  fetch("/logout", {
     method: "POST",
     credentials: "include", // Important for cookies to be sent with the request
   })
@@ -188,10 +219,22 @@ function logout() {
 document.addEventListener("DOMContentLoaded", () => {
   checkLoginStatus();
 
+  document
+    .getElementById("twitchLoginButton")
+    .addEventListener("click", function () {
+      window.location.href = "/login/twitch";
+    });
+
+  document
+    .getElementById("youtubeLoginButton")
+    .addEventListener("click", function () {
+      window.location.href = "/login/youtube";
+    });
+
   document.getElementById("logoutButton").addEventListener("click", logout);
-  document.getElementById("loginButton").addEventListener("click", () => {
-    window.location.href = "/login";
-  });
+  document
+    .getElementById("sendMessageButton")
+    .addEventListener("click", sendMessage);
 
   document.addEventListener("visibilitychange", handleVisibilityChange);
   window.addEventListener("pageshow", handleVisibilityChange);
@@ -231,4 +274,31 @@ function handleVisibilityChange() {
       }
     }
   }
+}
+
+// Function to send a message
+function sendMessage() {
+  const message = document.getElementById("messageInput").value;
+  if (!message) {
+    console.log("No message to send");
+    return;
+  }
+
+  fetch("/auth/send-message", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ message: message }),
+    credentials: "include", // Important for session handling
+  })
+    .then((response) => {
+      if (response.ok) {
+        console.log("Message sent successfully");
+        document.getElementById("messageInput").value = ""; // Clear the input after sending
+      } else {
+        console.error("Failed to send message");
+      }
+    })
+    .catch((error) => console.error("Error sending message:", error));
 }

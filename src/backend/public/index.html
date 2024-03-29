@@ -10,8 +10,26 @@
     <div class="header">
       <h2>Combined Chat</h2>
       <div class="buttons">
-        <button id="loginButton">Login</button>
+        <!-- Twitch Login Button -->
+        <button
+          id="twitchLoginButton"
+          title="Login with Twitch"
+          class="login-btn"
+        >
+          <img src="twitch-tile.svg" alt="Login with Twitch" />
+        </button>
+        <!-- YouTube Login Button -->
+        <button
+          id="youtubeLoginButton"
+          title="Login with YouTube"
+          class="login-btn"
+        >
+          <img src="youtube-tile.svg" alt="Login with YouTube" />
+        </button>
+
+        <!-- Logout Button -->
         <button id="logoutButton" style="display: none">Logout</button>
+        <!-- Refresh and Popout Buttons -->
         <button id="refreshServerBtn" title="Refresh Server">
           <img src="refresh2.png" alt="Refresh" />
         </button>
@@ -20,7 +38,17 @@
         </button>
       </div>
     </div>
+
     <div id="chat-container"></div>
+
+    <div id="message-send-container">
+      <input
+        type="text"
+        id="messageInput"
+        placeholder="Type your message here..."
+      />
+      <button id="sendMessageButton">Send</button>
+    </div>
 
     <script src="main.js"></script>
   </body>

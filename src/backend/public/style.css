@@ -5,7 +5,7 @@ body {
   forced-color-adjust: none; /* This prevents high contrast mode from changing colors */
 }
 #chat-container {
-  height: 80vh;
+  height: 70%;
   overflow-y: scroll;
   border: 1px solid #333;
   padding: 10px;
@@ -46,6 +46,16 @@ body {
   align-items: right;
   justify-content: space-between;
   gap: 10px;
+}
+.login-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.login-btn img {
+  height: 30px;
+  width: 30px;
 }
 #popoutChatBtn {
   background: none;
