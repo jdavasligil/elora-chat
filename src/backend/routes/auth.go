@@ -177,6 +177,12 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 		userData["youtube_token"] = token.AccessToken
 	}
 
+	// Store refresh token and expiry time if available
+	if token.RefreshToken != "" {
+		userData["refresh_token"] = token.RefreshToken
+	}
+	userData["token_expiry"] = token.Expiry.Unix() // Store as Unix timestamp for simplicity
+
 	// Now, use a function to update the session data with this service login
 	// This should include setting the session token in a cookie
 	updateSessionDataForService(w, userData, service, sessionToken)
@@ -299,9 +305,6 @@ func generateSessionToken() string {
 // sessionMiddleware checks for a valid session token in the request cookies.
 func SessionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Log the request path for context
-		// log.Printf("SessionMiddleware triggered for path: %s\n", r.URL.Path)
-
 		// Attempt to retrieve the session token cookie
 		cookie, err := r.Cookie("session_token")
 		if err != nil {
@@ -309,7 +312,6 @@ func SessionMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "Unauthorized: No session token", http.StatusUnauthorized)
 			return
 		}
-		// log.Printf("Session token cookie found: %s\n", cookie.Value)
 
 		sessionToken := cookie.Value
 
@@ -321,7 +323,6 @@ func SessionMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Unmarshal session data to access the services array
 		var sessionData map[string]interface{}
 		err = json.Unmarshal([]byte(sessionDataJson), &sessionData)
 		if err != nil {
@@ -330,7 +331,6 @@ func SessionMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Check for both Twitch and YouTube in the services array
 		services, ok := sessionData["services"].([]interface{})
 		if !ok {
 			log.Println("Services array missing or incorrect format in session data")
@@ -343,8 +343,16 @@ func SessionMiddleware(next http.Handler) http.Handler {
 			if serviceName, ok := service.(string); ok {
 				if serviceName == "twitch" {
 					hasTwitch = true
+					// Refresh Twitch token if necessary
+					if err := refreshToken("twitch", sessionToken); err != nil {
+						log.Printf("Error refreshing Twitch token: %v", err)
+					}
 				} else if serviceName == "youtube" {
 					hasYouTube = true
+					// Refresh YouTube token if necessary
+					if err := refreshToken("youtube", sessionToken); err != nil {
+						log.Printf("Error refreshing YouTube token: %v", err)
+					}
 				}
 			}
 		}
@@ -355,7 +363,6 @@ func SessionMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// log.Println("User logged in with both Twitch and YouTube")
 		// Proceed with the request
 		next.ServeHTTP(w, r)
 	})
@@ -415,13 +422,120 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+func refreshToken(service string, sessionToken string) error {
+	// Retrieve the session data from Redis
+	sessionDataJson, err := redisClient.Get(ctx, fmt.Sprintf("session:%s", sessionToken)).Result()
+	if err != nil {
+		return fmt.Errorf("failed to retrieve session data: %v", err)
+	}
+
+	var sessionData map[string]interface{}
+	err = json.Unmarshal([]byte(sessionDataJson), &sessionData)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal session data: %v", err)
+	}
+
+	// Extract the necessary data for token refresh
+	expiry, expiryOk := sessionData["token_expiry"].(int64)
+	refreshToken, refreshTokenOk := sessionData["refresh_token"].(string)
+	if !expiryOk || !refreshTokenOk || time.Now().Unix() < expiry {
+		// Token hasn't expired or necessary data is not available, no refresh needed
+		return nil
+	}
+
+	var oauthConfig *oauth2.Config
+	switch service {
+	case "twitch":
+		oauthConfig = twitchOAuthConfig
+	case "youtube":
+		oauthConfig = youtubeOAuthConfig
+	default:
+		return fmt.Errorf("unsupported service: %s", service)
+	}
+
+	token := &oauth2.Token{
+		RefreshToken: refreshToken,
+	}
+	ts := oauthConfig.TokenSource(context.Background(), token)
+	newToken, err := ts.Token() // This refreshes the token
+	if err != nil {
+		return fmt.Errorf("failed to refresh token: %v", err)
+	}
+
+	// Prepare userData with the new token information
+	userData := map[string]interface{}{
+		fmt.Sprintf("%s_token", service): newToken.AccessToken,
+		"refresh_token":                  newToken.RefreshToken,
+		"token_expiry":                   newToken.Expiry.Unix(),
+	}
+
+	// Use the existing function to update the session data
+	// Note: This function already handles Redis update and session cookie reset
+	updateSessionDataForService(nil, userData, service, sessionToken) // Assuming w http.ResponseWriter is not required for Redis update
+
+	return nil
+}
+
+func expireRefreshTestHandler(w http.ResponseWriter, r *http.Request) {
+	// Simulate token expiration by setting the expiry to a past time
+	expiredTime := time.Now().Add(-24 * time.Hour) // 24 hours in the past
+
+	// Retrieve session token from cookie
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		http.Error(w, "Session token cookie is required", http.StatusBadRequest)
+		return
+	}
+	sessionToken := cookie.Value
+
+	// Retrieve the session data from Redis
+	sessionDataJson, err := redisClient.Get(ctx, fmt.Sprintf("session:%s", sessionToken)).Result()
+	if err != nil {
+		http.Error(w, "Failed to retrieve session data", http.StatusInternalServerError)
+		return
+	}
+
+	var sessionData map[string]interface{}
+	err = json.Unmarshal([]byte(sessionDataJson), &sessionData)
+	if err != nil {
+		http.Error(w, "Failed to unmarshal session data", http.StatusInternalServerError)
+		return
+	}
+
+	// Update the expiry time for both Twitch and YouTube tokens in the session data
+	// This assumes that your session data structure includes token_expiry fields for both services
+	if _, ok := sessionData["twitch_token"]; ok {
+		sessionData["token_expiry"] = expiredTime.Unix()
+	}
+	if _, ok := sessionData["youtube_token"]; ok {
+		sessionData["token_expiry"] = expiredTime.Unix()
+	}
+
+	// Marshal the updated session data back to JSON
+	updatedSessionDataJson, err := json.Marshal(sessionData)
+	if err != nil {
+		http.Error(w, "Error marshalling updated session data", http.StatusInternalServerError)
+		return
+	}
+
+	// Store the updated session data in Redis
+	err = redisClient.Set(ctx, fmt.Sprintf("session:%s", sessionToken), updatedSessionDataJson, 24*time.Hour).Err()
+	if err != nil {
+		http.Error(w, "Failed to store updated session data", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond to the request indicating the operation was successful
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Token expiry times updated successfully. Try accessing a protected route to trigger token refresh."))
+}
+
 func SetupAuthRoutes(router *mux.Router) {
 	// Existing setup...
 	router.HandleFunc("/login/twitch", loginHandler).Methods("GET")
 	router.HandleFunc("/login/youtube", loginHandler).Methods("GET")
 	router.HandleFunc("/callback/twitch", callbackHandler)
 	router.HandleFunc("/callback/youtube", callbackHandler)
-	// Register logout endpoint within authRoutes to ensure it's protected
 	router.HandleFunc("/logout", logoutHandler).Methods("POST")
 
 	// This route is now outside of the authRoutes subrouter to be accessible without both services logged in
