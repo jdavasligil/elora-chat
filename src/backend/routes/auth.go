@@ -476,60 +476,6 @@ func refreshToken(service string, sessionToken string) error {
 	return nil
 }
 
-func expireRefreshTestHandler(w http.ResponseWriter, r *http.Request) {
-	// Simulate token expiration by setting the expiry to a past time
-	expiredTime := time.Now().Add(-24 * time.Hour) // 24 hours in the past
-
-	// Retrieve session token from cookie
-	cookie, err := r.Cookie("session_token")
-	if err != nil {
-		http.Error(w, "Session token cookie is required", http.StatusBadRequest)
-		return
-	}
-	sessionToken := cookie.Value
-
-	// Retrieve the session data from Redis
-	sessionDataJson, err := redisClient.Get(ctx, fmt.Sprintf("session:%s", sessionToken)).Result()
-	if err != nil {
-		http.Error(w, "Failed to retrieve session data", http.StatusInternalServerError)
-		return
-	}
-
-	var sessionData map[string]interface{}
-	err = json.Unmarshal([]byte(sessionDataJson), &sessionData)
-	if err != nil {
-		http.Error(w, "Failed to unmarshal session data", http.StatusInternalServerError)
-		return
-	}
-
-	// Update the expiry time for both Twitch and YouTube tokens in the session data
-	// This assumes that your session data structure includes token_expiry fields for both services
-	if _, ok := sessionData["twitch_token"]; ok {
-		sessionData["token_expiry"] = expiredTime.Unix()
-	}
-	if _, ok := sessionData["youtube_token"]; ok {
-		sessionData["token_expiry"] = expiredTime.Unix()
-	}
-
-	// Marshal the updated session data back to JSON
-	updatedSessionDataJson, err := json.Marshal(sessionData)
-	if err != nil {
-		http.Error(w, "Error marshalling updated session data", http.StatusInternalServerError)
-		return
-	}
-
-	// Store the updated session data in Redis
-	err = redisClient.Set(ctx, fmt.Sprintf("session:%s", sessionToken), updatedSessionDataJson, 24*time.Hour).Err()
-	if err != nil {
-		http.Error(w, "Failed to store updated session data", http.StatusInternalServerError)
-		return
-	}
-
-	// Respond to the request indicating the operation was successful
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Token expiry times updated successfully. Try accessing a protected route to trigger token refresh."))
-}
-
 func SetupAuthRoutes(router *mux.Router) {
 	// Existing setup...
 	router.HandleFunc("/login/twitch", loginHandler).Methods("GET")
