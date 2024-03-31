@@ -69,7 +69,7 @@ function processMessageQueue() {
   }
 
   // If there's a large number of messages, only keep the last N
-  const N = 60;
+  const N = 200;
   if (messageQueue.length > N) {
     messageQueue.splice(0, messageQueue.length - N);
   }
@@ -125,15 +125,18 @@ function processMessageQueue() {
   messageElement.innerHTML =
     badgesHTML +
     `<b><span style="color: ${message.colour}">${message.author}:</span></b> ${messageWithEmotes}`;
-  container.appendChild(messageElement);
-  container.scrollTop = container.scrollHeight; // Scroll to the bottom
+  // Prepend new message at the start of the container, which visually appears at the bottom
+  container.insertBefore(messageElement, container.firstChild);
 
-  // Limit the number of messages in the chat container to 60
+  // Scroll to the bottom of the chat container
+  // The 'flex-direction: column-reverse' means we actually want to scroll to the top
+  container.scrollTop = 0;
+
+  // Limit the number of messages in the chat container to N
   let chatMessages = container.querySelectorAll(".chat-message");
-  while (chatMessages.length > 60) {
-    const oldestMessage = chatMessages[0];
+  while (chatMessages.length > N) {
+    const oldestMessage = chatMessages[chatMessages.length - 1];
     if (oldestMessage) {
-      // Make sure the oldest message exists before removing it
       oldestMessage.parentNode.removeChild(oldestMessage);
     }
     // Update the chatMessages NodeList after removal
@@ -278,11 +281,14 @@ function handleVisibilityChange() {
 
 // Function to send a message
 function sendMessage() {
-  const message = document.getElementById("messageInput").value;
+  const messageInput = document.getElementById("messageInput");
+  const message = messageInput.value;
   if (!message) {
     console.log("No message to send");
     return;
   }
+
+  messageInput.value = ""; // Clear the input immediately
 
   fetch("/auth/send-message", {
     method: "POST",
@@ -295,10 +301,17 @@ function sendMessage() {
     .then((response) => {
       if (response.ok) {
         console.log("Message sent successfully");
-        document.getElementById("messageInput").value = ""; // Clear the input after sending
       } else {
         console.error("Failed to send message");
       }
     })
     .catch((error) => console.error("Error sending message:", error));
 }
+
+document
+  .getElementById("messageInput")
+  .addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  });
