@@ -137,6 +137,16 @@ html {
   transition: background-color 0.3s;
 }
 
+#logoutButton {
+  background: none; /* No background */
+  border: none; /* No border */
+  color: #bbb; /* Light grey color, adjust if needed */
+  cursor: pointer; /* Cursor changes to pointer to indicate it's clickable */
+  padding: 0; /* No padding */
+  font-size: 1em; /* Adjust the size as needed */
+  transition: color 0.3s; /* Transition for color change on hover */
+}
+
 .message-input-box:focus {
   outline: none;
 }

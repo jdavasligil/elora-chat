@@ -174,33 +174,35 @@ function checkLoginStatus() {
 }
 
 function updateUIForLoggedInUser(loggedInServices) {
-  // Hide or show the login buttons based on the loggedInService parameter
   const twitchLoginButton = document.getElementById("twitchLoginButton");
   const youtubeLoginButton = document.getElementById("youtubeLoginButton");
+  const popoutChatBtn = document.getElementById("popoutChatBtn");
+  const refreshServerBtn = document.getElementById("refreshServerBtn");
 
-  // Assuming 'loggedInService' is a string that indicates which service is logged in
-  // For example, it could be "twitch", "youtube", or "both"
-  if (loggedInServices.includes("twitch")) {
-    twitchLoginButton.style.display = "none";
-  } else {
-    twitchLoginButton.style.display = "block";
-  }
+  twitchLoginButton.style.display = loggedInServices.includes("twitch")
+    ? "none"
+    : "block";
+  youtubeLoginButton.style.display = loggedInServices.includes("youtube")
+    ? "none"
+    : "block";
 
-  if (loggedInServices.includes("youtube")) {
-    youtubeLoginButton.style.display = "none";
-  } else {
-    youtubeLoginButton.style.display = "block";
-  }
+  // Show popout and refresh buttons only if both services are logged in
+  const bothServicesLoggedIn =
+    loggedInServices.includes("twitch") && loggedInServices.includes("youtube");
+  popoutChatBtn.style.display = bothServicesLoggedIn ? "block" : "none";
+  refreshServerBtn.style.display = bothServicesLoggedIn ? "block" : "none";
 
   // Always show the logout button if the user is logged into any service
   document.getElementById("logoutButton").style.display = "block";
 }
 
 function updateUIForLoggedOutUser() {
-  // Show login buttons and hide the logout button
+  // Show login buttons and hide the logout button, popout, and refresh buttons
   document.getElementById("twitchLoginButton").style.display = "block";
   document.getElementById("youtubeLoginButton").style.display = "block";
   document.getElementById("logoutButton").style.display = "none";
+  document.getElementById("popoutChatBtn").style.display = "none";
+  document.getElementById("refreshServerBtn").style.display = "none";
 }
 
 function logout() {
