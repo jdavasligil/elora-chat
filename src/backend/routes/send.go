@@ -84,7 +84,7 @@ func sendMessageToTwitch(sessionToken string, channel string, message string) er
 
 	// Twitch IRC server details
 	server := "irc.chat.twitch.tv:6667"
-	nickname := "hp_az" // The streamer's Twitch username
+	nickname := "Dayoman" // The streamer's Twitch username
 
 	// Connect to Twitch IRC server
 	conn, err := net.Dial("tcp", server)

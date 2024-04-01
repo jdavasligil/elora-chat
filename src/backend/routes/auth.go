@@ -22,7 +22,7 @@ import (
 // Twitch OAuth configuration
 var twitchOAuthConfig = &oauth2.Config{
 	ClientID:     "yzn1qir54by5q528tinhfranwu6o8c",
-	ClientSecret: "4rvvit22eqqia76dwekw4s2godt5hy",
+	ClientSecret: "ilaak21804dqgecsx3cxrxnylmogn4",
 	RedirectURL:  "http://localhost:8080/callback/twitch",
 	Scopes:       []string{"chat:edit", "chat:read"}, // Updated scopes
 	Endpoint:     twitch.Endpoint,                    // Make sure to import "golang.org/x/oauth2/twitch"
@@ -31,7 +31,7 @@ var twitchOAuthConfig = &oauth2.Config{
 // YouTube OAuth configuration
 var youtubeOAuthConfig = &oauth2.Config{
 	ClientID:     "456484052696-173incl6ktid55uff5f9jboucvu742l7.apps.googleusercontent.com",
-	ClientSecret: "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",
+	ClientSecret: "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",
 	RedirectURL:  "http://localhost:8080/callback/youtube",
 	Scopes:       []string{"https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/userinfo.email"}, // Updated scope
 	Endpoint:     google.Endpoint,                                                                                       // Make sure to import "golang.org/x/oauth2/google"
