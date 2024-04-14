@@ -29,23 +29,32 @@ COPY --from=builder /app/server /app/
 # Copy the frontend files to the production image
 COPY src/backend/public /app/public
 
-# Copy the Python script
+# Copy client secret for ytLiveChatBot
+COPY client_secret.json /app/client_secret.json
+
+# Copy the Python script and requirements
 COPY python/fetch_chat.py /app/python/
+COPY python/requirements.txt /app/python/
 
 # Install Python dependencies
-COPY python/requirements.txt /app/python/
 RUN pip install --no-cache-dir -r /app/python/requirements.txt && \
     rm -rf /app/python/requirements.txt
+
+# Create a non-root user and set up the .credentials directory
+RUN adduser -D myuser && \
+    mkdir -p /home/myuser/.credentials && \
+    chown -R myuser:myuser /home/myuser/.credentials
+
+# Copy youtube-go.json into the .credentials directory as myuser
+COPY --chown=myuser:myuser youtube-go.json /home/myuser/.credentials/youtube-go.json
+
+USER myuser
 
 # Expose the port the app runs on
 EXPOSE 8080
 
 # Set environment variables for the Go application
 ENV PYTHONPATH=/app/python
-
-# Specify a non-root user to run the app
-RUN adduser -D myuser
-USER myuser
 
 # Run the web service on container startup
 CMD ["/app/server"]

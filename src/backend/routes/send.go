@@ -8,12 +8,66 @@ import (
 	"net"
 	"net/http"
 	"net/textproto"
-	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
-	"golang.org/x/oauth2"
+	ytbot "github.com/ketan-10/ytLiveChatBot"
+	"google.golang.org/api/option"
 	"google.golang.org/api/youtube/v3"
 )
+
+// Global variable for the chat bot, assuming you're managing one YouTube stream
+var chatBot *ytbot.LiveChatBot
+
+func init() {
+	apiKey := "AIzaSyBjKvYvbpwybafW7OdvAt5-GS61kds4vBI" // Retrieve API key from environment variable
+	channelID := "UC2c4NxvHnbXs3NLpCm641ew"             // Replace with your actual YouTube channel ID
+
+	liveURL, err := fetchLiveStreamURL(apiKey, channelID)
+	if err != nil {
+		log.Printf("No live stream available at start-up or error fetching URL: %v", err)
+		// Start a goroutine that keeps checking for the livestream URL at interval
+		go func() {
+			ticker := time.NewTicker(10 * time.Second)
+			defer ticker.Stop()
+			for range ticker.C {
+				if url, err := fetchLiveStreamURL(apiKey, channelID); err == nil {
+					chatBot = ytbot.NewLiveChatBot(&ytbot.LiveChatBotInput{
+						Urls: []string{url},
+					})
+					log.Println("Live stream URL found and bot initialized:", url)
+					return // Stop the ticker when the URL is successfully fetched
+				}
+			}
+		}()
+	} else {
+		chatBot = ytbot.NewLiveChatBot(&ytbot.LiveChatBotInput{
+			Urls: []string{liveURL},
+		})
+		log.Println("Live stream URL successfully fetched and bot initialized at startup:", liveURL)
+	}
+}
+
+func fetchLiveStreamURL(apiKey, channelID string) (string, error) {
+	ctx := context.Background()
+	youtubeService, err := youtube.NewService(ctx, option.WithAPIKey(apiKey))
+	if err != nil {
+		return "", fmt.Errorf("error creating YouTube service: %v", err)
+	}
+
+	call := youtubeService.Search.List([]string{"id"}).ChannelId(channelID).EventType("live").Type("video").MaxResults(1)
+	response, err := call.Do()
+	if err != nil {
+		return "", fmt.Errorf("error making search API call: %v", err)
+	}
+
+	if len(response.Items) == 0 {
+		return "", fmt.Errorf("no live streams currently on this channel")
+	}
+
+	liveVideoID := response.Items[0].Id.VideoId
+	return fmt.Sprintf("https://www.youtube.com/watch?v=%s", liveVideoID), nil
+}
 
 // sendMessageHandler handles requests to send messages to both Twitch and YouTube chats.
 func sendMessageHandler(w http.ResponseWriter, r *http.Request) {
@@ -33,21 +87,69 @@ func sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Retrieve the username associated with this session
+	username, err := getUsernameFromSession(sessionToken)
+	if err != nil {
+		http.Error(w, "Failed to get username from session", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the username matches "Dayoman"
+	if username != "Dayoman" {
+		http.Error(w, "Unauthorized: Incorrect user", http.StatusUnauthorized)
+		return
+	}
+
 	// Send message to Twitch
-	if err := sendMessageToTwitch(sessionToken, "hp_az", requestBody.Message); err != nil {
+	if err := sendMessageToTwitch(sessionToken, "Dayoman", requestBody.Message); err != nil {
 		log.Printf("Error sending message to Twitch: %v", err)
 		// Consider how to handle partial failure
 	}
 
-	// Send message to YouTube
-	if err := sendMessageToYouTube(requestBody.Message, sessionToken); err != nil {
-		log.Printf("Error sending message to YouTube: %v", err)
-		// Consider how to handle partial failure
+	// Send message to YouTube using ytLiveChatBot
+	if len(chatBot.ChatWriters) > 0 {
+		for _, chatWriter := range chatBot.ChatWriters {
+			chatWriter <- requestBody.Message
+			break // Send to the first stream only for simplicity
+		}
+		log.Println("Message sent to YouTube via ytLiveChatBot:", requestBody.Message)
+	} else {
+		log.Println("ytLiveChatBot is not connected to any YouTube live stream.")
 	}
 
-	// Respond to the client
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Message sent successfully to Twitch and YouTube"))
+}
+
+// Helper function to retrieve the username from session data
+func getUsernameFromSession(sessionToken string) (string, error) {
+	sessionDataJson, err := redisClient.Get(context.Background(), fmt.Sprintf("session:%s", sessionToken)).Result()
+	if err != nil {
+		return "", fmt.Errorf("error retrieving session data from Redis: %v", err)
+	}
+
+	var sessionData map[string]interface{}
+	if err := json.Unmarshal([]byte(sessionDataJson), &sessionData); err != nil {
+		return "", fmt.Errorf("error unmarshalling session data: %v", err)
+	}
+
+	// Assuming the username is nested under "data" which is an array of user information
+	userData, ok := sessionData["data"].([]interface{})
+	if !ok || len(userData) == 0 {
+		return "", fmt.Errorf("user data is not found or is not in the expected format")
+	}
+
+	userMap, ok := userData[0].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("user data format is incorrect or empty")
+	}
+
+	username, ok := userMap["login"].(string)
+	if !ok {
+		return "", fmt.Errorf("username not found in session data")
+	}
+
+	return username, nil
 }
 
 // getTwitchOAuthToken retrieves the OAuth token for Twitch from the session data.
@@ -64,7 +166,6 @@ func getTwitchOAuthToken(sessionToken string) (string, error) {
 		return "", fmt.Errorf("error unmarshalling session data: %v", err)
 	}
 
-	log.Println(sessionData)
 	// Assuming the token is stored under a "twitch_token" key
 	token, ok := sessionData["twitch_token"].(string)
 	if !ok {
@@ -110,99 +211,6 @@ func sendMessageToTwitch(sessionToken string, channel string, message string) er
 	return nil
 }
 
-// sendMessageToYouTube sends a message to a YouTube live chat.
-func sendMessageToYouTube(message string, sessionToken string) error {
-	accessToken, err := getStoredAccessToken("youtube", sessionToken)
-	if err != nil {
-		log.Printf("Error retrieving YouTube access token: %v", err)
-		return err
-	}
-
-	liveChatID, err := getYouTubeLiveChatID(accessToken)
-	if err != nil {
-		log.Printf("Error retrieving YouTube Live Chat ID: %v", err)
-		return err
-	}
-
-	// Construct the message request for YouTube's LiveChatMessages API
-	messageRequestBody := map[string]interface{}{
-		"snippet": map[string]interface{}{
-			"liveChatId": liveChatID,
-			"type":       "textMessageEvent",
-			"textMessageDetails": map[string]interface{}{
-				"messageText": message,
-			},
-		},
-	}
-	requestBody, _ := json.Marshal(messageRequestBody)
-
-	request, _ := http.NewRequest("POST", "https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet", strings.NewReader(string(requestBody)))
-	request.Header.Set("Authorization", "Bearer "+accessToken)
-	request.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		log.Printf("Failed to send message to YouTube Live Chat: %v", err)
-		return err
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != 200 {
-		log.Printf("YouTube API responded with non-200 status: %d", response.StatusCode)
-		return fmt.Errorf("YouTube API error status %d", response.StatusCode)
-	}
-
-	log.Println("Message successfully sent to YouTube Live Chat")
-	return nil
-}
-
-// upgrade later to use the URL with the channel ID
-// Helper function to create an OAuth2 token source from an access token.
-func tokenSourceFromAccessToken(tokenStr string) oauth2.TokenSource {
-	token := &oauth2.Token{AccessToken: tokenStr}
-	return oauth2.StaticTokenSource(token)
-}
-
-// getYouTubeLiveChatID retrieves the live chat ID using the YouTube Data API v3.
-func getYouTubeLiveChatID(accessToken string) (string, error) {
-	ctx := context.Background()
-
-	// Create an HTTP client using the access token.
-	tokenSource := tokenSourceFromAccessToken(accessToken)
-	httpClient := oauth2.NewClient(ctx, tokenSource)
-
-	// Create a YouTube service.
-	service, err := youtube.New(httpClient)
-	if err != nil {
-		log.Printf("Error creating YouTube service: %v", err)
-		return "", err
-	}
-
-	// Fetch live broadcasts.
-	response, err := service.LiveBroadcasts.List([]string{"snippet"}).
-		BroadcastStatus("active").
-		BroadcastType("all").
-		Do()
-	if err != nil {
-		log.Printf("Error fetching live broadcasts: %v", err)
-		return "", err
-	}
-
-	if len(response.Items) == 0 {
-		log.Println("No active live broadcasts found.")
-		return "", fmt.Errorf("no active live broadcasts found")
-	}
-
-	liveChatID := response.Items[0].Snippet.LiveChatId
-	if liveChatID == "" {
-		log.Println("Live chat ID not found.")
-		return "", fmt.Errorf("live chat ID not found")
-	}
-
-	return liveChatID, nil
-}
-
 // getSessionTokenFromRequest extracts the session token from the request cookies.
 func getSessionTokenFromRequest(r *http.Request) (string, error) {
 	cookie, err := r.Cookie("session_token")
@@ -211,38 +219,6 @@ func getSessionTokenFromRequest(r *http.Request) (string, error) {
 		return "", fmt.Errorf("session token cookie not found")
 	}
 	return cookie.Value, nil
-}
-
-func getStoredAccessToken(service string, sessionToken string) (string, error) {
-	// Retrieve the session data JSON from Redis using the session token
-	sessionDataJson, err := redisClient.Get(ctx, fmt.Sprintf("session:%s", sessionToken)).Result()
-	if err != nil {
-		log.Printf("Failed to retrieve session data for token %s: %v", sessionToken, err)
-		return "", fmt.Errorf("failed to retrieve session data: %w", err)
-	}
-
-	// Unmarshal the session data JSON into a map
-	var sessionData map[string]interface{}
-	if err := json.Unmarshal([]byte(sessionDataJson), &sessionData); err != nil {
-		log.Printf("Failed to unmarshal session data: %v", err)
-		return "", fmt.Errorf("failed to unmarshal session data: %w", err)
-	}
-
-	// Extract the access token for the specified service using the correct key
-	// Adjust the key to match how it's stored - "youtube_token" or "twitch_token"
-	var tokenKey string
-	if service == "youtube" {
-		tokenKey = "youtube_token"
-	} else if service == "twitch" {
-		tokenKey = "twitch_token"
-	}
-
-	accessToken, ok := sessionData[tokenKey].(string)
-	if !ok || accessToken == "" {
-		return "", fmt.Errorf("access token for service %s not found in session data", service)
-	}
-
-	return accessToken, nil
 }
 
 // Setup function to register the send message route

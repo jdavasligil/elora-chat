@@ -175,31 +175,28 @@ function checkLoginStatus() {
 
 function updateUIForLoggedInUser(loggedInServices) {
   const twitchLoginButton = document.getElementById("twitchLoginButton");
-  const youtubeLoginButton = document.getElementById("youtubeLoginButton");
   const popoutChatBtn = document.getElementById("popoutChatBtn");
   const refreshServerBtn = document.getElementById("refreshServerBtn");
 
+  // Display the Twitch login button only if Twitch is not logged in
   twitchLoginButton.style.display = loggedInServices.includes("twitch")
     ? "none"
     : "block";
-  youtubeLoginButton.style.display = loggedInServices.includes("youtube")
-    ? "none"
-    : "block";
 
-  // Show popout and refresh buttons only if both services are logged in
-  const bothServicesLoggedIn =
-    loggedInServices.includes("twitch") && loggedInServices.includes("youtube");
-  popoutChatBtn.style.display = bothServicesLoggedIn ? "block" : "none";
-  refreshServerBtn.style.display = bothServicesLoggedIn ? "block" : "none";
+  // Since YouTube login is handled by the backend, we show popout and refresh buttons if Twitch is logged in
+  const isTwitchLoggedIn = loggedInServices.includes("twitch");
+  popoutChatBtn.style.display = isTwitchLoggedIn ? "block" : "none";
+  refreshServerBtn.style.display = isTwitchLoggedIn ? "block" : "none";
 
-  // Always show the logout button if the user is logged into any service
-  document.getElementById("logoutButton").style.display = "block";
+  // Always show the logout button if Twitch is logged in
+  document.getElementById("logoutButton").style.display = isTwitchLoggedIn
+    ? "block"
+    : "none";
 }
 
 function updateUIForLoggedOutUser() {
-  // Show login buttons and hide the logout button, popout, and refresh buttons
+  // Show the Twitch login button and hide the logout button, popout, and refresh buttons
   document.getElementById("twitchLoginButton").style.display = "block";
-  document.getElementById("youtubeLoginButton").style.display = "block";
   document.getElementById("logoutButton").style.display = "none";
   document.getElementById("popoutChatBtn").style.display = "none";
   document.getElementById("refreshServerBtn").style.display = "none";
@@ -230,17 +227,14 @@ document.addEventListener("DOMContentLoaded", () => {
       window.location.href = "/login/twitch";
     });
 
-  document
-    .getElementById("youtubeLoginButton")
-    .addEventListener("click", function () {
-      window.location.href = "/login/youtube";
-    });
+  // Removed event listener for YouTube login button
 
   document.getElementById("logoutButton").addEventListener("click", logout);
   document
     .getElementById("sendMessageButton")
     .addEventListener("click", sendMessage);
 
+  // Remaining event listeners unchanged
   document.addEventListener("visibilitychange", handleVisibilityChange);
   window.addEventListener("pageshow", handleVisibilityChange);
   window.addEventListener("online", handleVisibilityChange);

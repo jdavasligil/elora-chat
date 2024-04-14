@@ -52,6 +52,7 @@ func main() {
 		// "https://www.youtube.com/@dayoman/live",
 		"http://youtube.com/channel/UC2c4NxvHnbXs3NLpCm641ew/live",
 		"https://www.twitch.tv/dayoman",
+		// "https://www.youtube.com/watch?v=4xDzrJKXOOY",
 		// "https://www.twitch.tv/forsen", // basically a hard code for constant chats
 		// "https://www.twitch.tv/jynxzi", // basically a hard code for constant chats
 		// "https://www.youtube.com/watch?v=Gtqw9b8g2wk",

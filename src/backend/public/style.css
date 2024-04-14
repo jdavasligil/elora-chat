@@ -23,7 +23,7 @@ html {
   display: flex;
   flex-direction: column-reverse;
   flex: 1;
-  overflow-y: auto;
+  overflow-y: hidden;
   padding: 0 10px; /* Horizontal padding to match header */
 }
 
@@ -44,9 +44,11 @@ html {
 }
 
 .chat-message {
-  margin: 5px 0;
+  margin: 4px 0;
   opacity: 0;
   animation: glideInBounce 0.5s forwards;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .badge-icon {
@@ -115,6 +117,7 @@ html {
 
 .message-input-box {
   flex-grow: 1;
+  width: auto;
   padding: 0 20px;
   height: 50px;
   border: 1px solid #666;
@@ -126,6 +129,7 @@ html {
 }
 
 .send-btn {
+  flex-shrink: 0; /* Prevent the send button from shrinking */
   padding: 10px 20px;
   height: 50px;
   border: 1px solid #666;
@@ -162,4 +166,11 @@ html {
 input[type="text"],
 button {
   padding: 10px;
+}
+
+.header,
+#message-send-container {
+  display: flex;
+  width: 100%; /* They take the full width of their container */
+  flex-shrink: 1; /* Allow shrinkage when necessary */
 }

@@ -161,7 +161,6 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 
 // StreamChat initializes a WebSocket connection and streams chat messages
 func StreamChat(w http.ResponseWriter, r *http.Request) {
-	log.Println("StreamChat triggered")
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Print("WebSocket upgrade error:", err)

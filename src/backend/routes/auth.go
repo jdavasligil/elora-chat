@@ -15,7 +15,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/twitch"
 )
 
@@ -23,72 +22,46 @@ import (
 var twitchOAuthConfig = &oauth2.Config{
 	ClientID:     "yzn1qir54by5q528tinhfranwu6o8c",
 	ClientSecret: "ilaak21804dqgecsx3cxrxnylmogn4",
-	RedirectURL:  "http://localhost:8080/callback/twitch",
+	RedirectURL:  "https://elora.chat/callback/twitch",
 	Scopes:       []string{"chat:edit", "chat:read"}, // Updated scopes
 	Endpoint:     twitch.Endpoint,                    // Make sure to import "golang.org/x/oauth2/twitch"
 }
 
-// YouTube OAuth configuration
-var youtubeOAuthConfig = &oauth2.Config{
-	ClientID:     "456484052696-173incl6ktid55uff5f9jboucvu742l7.apps.googleusercontent.com",
-	ClientSecret: "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",
-	RedirectURL:  "http://localhost:8080/callback/youtube",
-	Scopes:       []string{"https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/userinfo.email"}, // Updated scope
-	Endpoint:     google.Endpoint,                                                                                       // Make sure to import "golang.org/x/oauth2/google"
-}
-
-// loginHandler to initiate OAuth with Twitch/YouTube
+// loginHandler to initiate OAuth with Twitch
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	var oauthConfig *oauth2.Config
-
-	// Determine which platform is being requested
-	switch {
-	case strings.Contains(r.URL.Path, "/twitch"):
-		oauthConfig = twitchOAuthConfig
-	case strings.Contains(r.URL.Path, "/youtube"):
-		oauthConfig = youtubeOAuthConfig
-	default:
+	if !strings.Contains(r.URL.Path, "/twitch") {
 		http.Error(w, "Unsupported platform", http.StatusBadRequest)
 		return
 	}
 
+	// Generate a new random state for the OAuth flow
 	state, err := generateState()
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	// Store "valid" as the state value for later validation, including which platform it's for
-	err = redisClient.Set(ctx, "oauth-state:"+state, "valid:"+oauthConfig.ClientID, 10*time.Minute).Err()
+	// Store the state in Redis with an expiration time to validate it later
+	err = redisClient.Set(ctx, "oauth-state:"+state, "valid", 10*time.Minute).Err()
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	// Redirect to the OAuth provider's authorization page
-	url := oauthConfig.AuthCodeURL(state, oauth2.AccessTypeOnline)
+	// Construct the OAuth URL and redirect the user to the Twitch authentication page
+	url := twitchOAuthConfig.AuthCodeURL(state, oauth2.AccessTypeOnline)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
 func callbackHandler(w http.ResponseWriter, r *http.Request) {
-	var oauthConfig *oauth2.Config
-	var userInfoURL string
-	var service string
-
-	// Determine which platform the callback is for and set appropriate variables
-	switch {
-	case strings.Contains(r.URL.Path, "/twitch"):
-		oauthConfig = twitchOAuthConfig
-		userInfoURL = "https://api.twitch.tv/helix/users"
-		service = "twitch"
-	case strings.Contains(r.URL.Path, "/youtube"):
-		oauthConfig = youtubeOAuthConfig
-		userInfoURL = "https://www.googleapis.com/oauth2/v3/userinfo"
-		service = "youtube"
-	default:
+	if !strings.Contains(r.URL.Path, "/twitch") {
 		http.Error(w, "Unsupported platform", http.StatusBadRequest)
 		return
 	}
+
+	var oauthConfig *oauth2.Config = twitchOAuthConfig
+	var userInfoURL string = "https://api.twitch.tv/helix/users"
+	var service string = "twitch"
 
 	// Check if an error query parameter is present
 	if errorReason := r.FormValue("error"); errorReason != "" {
@@ -111,31 +84,20 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Use the access token to fetch user information from the appropriate API
-	client := oauthConfig.Client(context.Background(), token)
-
 	var req *http.Request
 	var res *http.Response
 
-	switch {
-	case strings.Contains(r.URL.Path, "/twitch"):
-		// For Twitch, manually set the headers and create the request
-		userInfoURL = "https://api.twitch.tv/helix/users"
-		req, err = http.NewRequest("GET", userInfoURL, nil)
-		if err != nil {
-			http.Error(w, "Failed to create request: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// Set necessary headers for Twitch API
-		req.Header.Set("Client-ID", oauthConfig.ClientID)
-		req.Header.Set("Authorization", "Bearer "+token.AccessToken)
-		res, err = http.DefaultClient.Do(req)
-
-	case strings.Contains(r.URL.Path, "/youtube"):
-		// YouTube login works fine, keep this block unchanged
-		userInfoURL = "https://www.googleapis.com/oauth2/v3/userinfo"
-		res, err = client.Get(userInfoURL)
+	// For Twitch, manually set the headers and create the request
+	userInfoURL = "https://api.twitch.tv/helix/users"
+	req, err = http.NewRequest("GET", userInfoURL, nil)
+	if err != nil {
+		http.Error(w, "Failed to create request: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
+	// Set necessary headers for Twitch API
+	req.Header.Set("Client-ID", oauthConfig.ClientID)
+	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+	res, err = http.DefaultClient.Do(req)
 
 	if err != nil || res.StatusCode != 200 {
 		http.Error(w, "Failed to get user info", http.StatusInternalServerError)
@@ -236,6 +198,8 @@ func updateSessionDataForService(w http.ResponseWriter, userData map[string]inte
 	if err != nil {
 		log.Printf("Failed to store updated session data in Redis: %v", err)
 		// Handle error appropriately
+	} else {
+		log.Printf("Updated session data stored successfully for sessionToken: %s, Data: %s", sessionToken, string(updatedSessionDataJson))
 	}
 
 	// Update the client's session cookie
@@ -302,7 +266,7 @@ func generateSessionToken() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
-// sessionMiddleware checks for a valid session token in the request cookies.
+// SessionMiddleware checks for a valid session token in the request cookies.
 func SessionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Attempt to retrieve the session token cookie
@@ -338,28 +302,21 @@ func SessionMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		var hasTwitch, hasYouTube bool
+		var hasTwitch bool
 		for _, service := range services {
-			if serviceName, ok := service.(string); ok {
-				if serviceName == "twitch" {
-					hasTwitch = true
-					// Refresh Twitch token if necessary
-					if err := refreshToken("twitch", sessionToken); err != nil {
-						log.Printf("Error refreshing Twitch token: %v", err)
-					}
-				} else if serviceName == "youtube" {
-					hasYouTube = true
-					// Refresh YouTube token if necessary
-					if err := refreshToken("youtube", sessionToken); err != nil {
-						log.Printf("Error refreshing YouTube token: %v", err)
-					}
+			if serviceName, ok := service.(string); ok && serviceName == "twitch" {
+				hasTwitch = true
+				// Refresh Twitch token if necessary
+				if err := refreshToken("twitch", sessionToken); err != nil {
+					log.Printf("Error refreshing Twitch token: %v", err)
 				}
+				break // Since we're only interested in Twitch, we can break early
 			}
 		}
 
-		if !hasTwitch || !hasYouTube {
-			log.Println("User has not logged in with both Twitch and YouTube")
-			http.Error(w, "Unauthorized: Required services not logged in", http.StatusUnauthorized)
+		if !hasTwitch {
+			log.Println("User has not logged in with Twitch")
+			http.Error(w, "Unauthorized: Twitch service not logged in", http.StatusUnauthorized)
 			return
 		}
 
@@ -443,15 +400,7 @@ func refreshToken(service string, sessionToken string) error {
 		return nil
 	}
 
-	var oauthConfig *oauth2.Config
-	switch service {
-	case "twitch":
-		oauthConfig = twitchOAuthConfig
-	case "youtube":
-		oauthConfig = youtubeOAuthConfig
-	default:
-		return fmt.Errorf("unsupported service: %s", service)
-	}
+	var oauthConfig *oauth2.Config = twitchOAuthConfig
 
 	token := &oauth2.Token{
 		RefreshToken: refreshToken,
@@ -479,9 +428,7 @@ func refreshToken(service string, sessionToken string) error {
 func SetupAuthRoutes(router *mux.Router) {
 	// Existing setup...
 	router.HandleFunc("/login/twitch", loginHandler).Methods("GET")
-	router.HandleFunc("/login/youtube", loginHandler).Methods("GET")
 	router.HandleFunc("/callback/twitch", callbackHandler)
-	router.HandleFunc("/callback/youtube", callbackHandler)
 	router.HandleFunc("/logout", logoutHandler).Methods("POST")
 
 	// This route is now outside of the authRoutes subrouter to be accessible without both services logged in
@@ -490,6 +437,4 @@ func SetupAuthRoutes(router *mux.Router) {
 	// Subrouter for routes that require authentication
 	authRoutes := router.PathPrefix("/auth").Subrouter()
 	authRoutes.Use(SessionMiddleware)
-
-	// Add any other protected routes here...
 }
