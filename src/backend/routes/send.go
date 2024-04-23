@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"net/textproto"
-	"time"
 
 	"github.com/gorilla/mux"
 	ytbot "github.com/ketan-10/ytLiveChatBot"
@@ -21,31 +20,37 @@ var chatBot *ytbot.LiveChatBot
 
 func init() {
 	apiKey := "AIzaSyBjKvYvbpwybafW7OdvAt5-GS61kds4vBI" // Retrieve API key from environment variable
-	channelID := "UC2c4NxvHnbXs3NLpCm641ew"             // Replace with your actual YouTube channel ID
 
-	liveURL, err := fetchLiveStreamURL(apiKey, channelID)
-	if err != nil {
-		log.Printf("No live stream available at start-up or error fetching URL: %v", err)
-		// Start a goroutine that keeps checking for the livestream URL at interval
-		go func() {
-			ticker := time.NewTicker(10 * time.Second)
-			defer ticker.Stop()
-			for range ticker.C {
-				if url, err := fetchLiveStreamURL(apiKey, channelID); err == nil {
-					chatBot = ytbot.NewLiveChatBot(&ytbot.LiveChatBotInput{
-						Urls: []string{url},
-					})
-					log.Println("Live stream URL found and bot initialized:", url)
-					return // Stop the ticker when the URL is successfully fetched
-				}
-			}
-		}()
-	} else {
-		chatBot = ytbot.NewLiveChatBot(&ytbot.LiveChatBotInput{
-			Urls: []string{liveURL},
-		})
-		log.Println("Live stream URL successfully fetched and bot initialized at startup:", liveURL)
+	// channelID := "UCHToAogHtFnv2uksbDzKsYA" // hp_az
+	// channelID := "UCSJ4gkVC6NrvII8umztf0Ow" // lofigirl
+	channelID := "UC2c4NxvHnbXs3NLpCm641ew" // dayoman
+
+	if err := cacheLiveStreamURL(apiKey, channelID); err == nil {
+		liveURL, _ := redisClient.Get(ctx, "youtube:live:url").Result()
+		startChatBot(liveURL)
 	}
+}
+
+func startChatBot(url string) {
+	chatBot = ytbot.NewLiveChatBot(&ytbot.LiveChatBotInput{
+		Urls: []string{url},
+	})
+}
+
+func cacheLiveStreamURL(apiKey, channelID string) error {
+	url, err := fetchLiveStreamURL(apiKey, channelID)
+	if err != nil {
+		log.Printf("Error fetching YouTube live stream URL: %v", err)
+		return err
+	}
+
+	// Store the URL in Redis
+	err = redisClient.Set(ctx, "youtube:live:url", url, 0).Err() // No expiration
+	if err != nil {
+		log.Printf("Error caching YouTube live stream URL in Redis: %v", err)
+		return err
+	}
+	return nil
 }
 
 func fetchLiveStreamURL(apiKey, channelID string) (string, error) {
@@ -71,6 +76,24 @@ func fetchLiveStreamURL(apiKey, channelID string) (string, error) {
 
 // sendMessageHandler handles requests to send messages to both Twitch and YouTube chats.
 func sendMessageHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey := "AIzaSyBjKvYvbpwybafW7OdvAt5-GS61kds4vBI"
+	channelID := "UC2c4NxvHnbXs3NLpCm641ew"
+
+	err := cacheLiveStreamURL(apiKey, channelID)
+	if err != nil {
+		http.Error(w, "Failed to refresh YouTube live stream URL", http.StatusInternalServerError)
+		return
+	}
+
+	liveURL, err := redisClient.Get(ctx, "youtube:live:url").Result()
+	if err != nil {
+		http.Error(w, "Failed to retrieve live stream URL from cache", http.StatusInternalServerError)
+		return
+	}
+
+	// Reinitialize the bot with the new URL
+	startChatBot(liveURL)
+
 	// Parse request body to get the message content
 	var requestBody struct {
 		Message string `json:"message"`
