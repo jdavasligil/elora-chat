@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/textproto"
+	"time"
 
 	"github.com/gorilla/mux"
 	ytbot "github.com/ketan-10/ytLiveChatBot"
@@ -29,12 +30,32 @@ func init() {
 		liveURL, _ := redisClient.Get(ctx, "youtube:live:url").Result()
 		startChatBot(liveURL)
 	}
+
+	// Start periodic refresh of YouTube Auth Token every 30 minutes
+	go refreshYouTubeAuthTokenEvery(30*time.Minute, apiKey, channelID)
 }
 
 func startChatBot(url string) {
 	chatBot = ytbot.NewLiveChatBot(&ytbot.LiveChatBotInput{
 		Urls: []string{url},
 	})
+}
+
+func refreshYouTubeAuthTokenEvery(interval time.Duration, apiKey, channelID string) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		if err := refreshYouTubeAuthToken(apiKey, channelID); err != nil {
+			log.Printf("Error refreshing YouTube auth token: %v", err)
+		} else {
+			log.Println("Successfully refreshed YouTube auth token")
+		}
+	}
+}
+
+func refreshYouTubeAuthToken(apiKey, channelID string) error {
+	return cacheLiveStreamURL(apiKey, channelID) // Reusing existing function to refresh URL
 }
 
 func cacheLiveStreamURL(apiKey, channelID string) error {
