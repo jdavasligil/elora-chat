@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -12,12 +13,20 @@ import (
 
 	"github.com/gorilla/mux"
 	ytbot "github.com/ketan-10/ytLiveChatBot"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 	"google.golang.org/api/youtube/v3"
 )
 
 // Global variable for the chat bot, assuming you're managing one YouTube stream
 var chatBot *ytbot.LiveChatBot
+var config = &oauth2.Config{
+	ClientID:     "456484052696-173incl6ktid55uff5f9jboucvu742l7.apps.googleusercontent.com", // Replace with your actual client ID
+	ClientSecret: "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",                                      // Replace with your actual client secret
+	Endpoint:     google.Endpoint,
+	// RedirectURL is typically not needed for server-side token refresh
+}
 
 func init() {
 	apiKey := "AIzaSyBjKvYvbpwybafW7OdvAt5-GS61kds4vBI" // Retrieve API key from environment variable
@@ -26,13 +35,14 @@ func init() {
 	// channelID := "UCSJ4gkVC6NrvII8umztf0Ow" // lofigirl
 	channelID := "UC2c4NxvHnbXs3NLpCm641ew" // dayoman
 
+	// Initialize bot with current live stream URL
 	if err := cacheLiveStreamURL(apiKey, channelID); err == nil {
 		liveURL, _ := redisClient.Get(ctx, "youtube:live:url").Result()
 		startChatBot(liveURL)
 	}
 
 	// Start periodic refresh of YouTube Auth Token every 30 minutes
-	go refreshYouTubeAuthTokenEvery(30*time.Minute, apiKey, channelID)
+	go refreshYouTubeAuthTokenEvery(30 * time.Minute)
 }
 
 func startChatBot(url string) {
@@ -41,21 +51,61 @@ func startChatBot(url string) {
 	})
 }
 
-func refreshYouTubeAuthTokenEvery(interval time.Duration, apiKey, channelID string) {
+func refreshYouTubeAuthTokenEvery(interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		if err := refreshYouTubeAuthToken(apiKey, channelID); err != nil {
-			log.Printf("Error refreshing YouTube auth token: %v", err)
-		} else {
-			log.Println("Successfully refreshed YouTube auth token")
+		if err := refreshYouTubeToken(); err != nil {
+			log.Printf("Error during scheduled token refresh: %v", err)
 		}
 	}
 }
 
-func refreshYouTubeAuthToken(apiKey, channelID string) error {
-	return cacheLiveStreamURL(apiKey, channelID) // Reusing existing function to refresh URL
+func refreshYouTubeToken() error {
+	// Load the current credentials from the file
+	credsData, err := ioutil.ReadFile("/home/myuser/.credentials/youtube-go.json")
+	if err != nil {
+		log.Printf("Error reading credentials file: %v", err)
+		return err
+	}
+
+	var token oauth2.Token
+	if err := json.Unmarshal(credsData, &token); err != nil {
+		log.Printf("Error unmarshalling token data: %v", err)
+		return err
+	}
+
+	// Log the current token details
+	log.Printf("Current token expiry: %v, Valid: %v", token.Expiry, token.Valid())
+
+	// Refresh the token
+	tokenSource := config.TokenSource(context.Background(), &token)
+	newToken, err := tokenSource.Token()
+	if err != nil {
+		log.Printf("Error refreshing token: %v", err)
+		return err
+	}
+
+	if newToken.AccessToken != token.AccessToken {
+		log.Printf("New token acquired. Old expiry: %v, New expiry: %v", token.Expiry, newToken.Expiry)
+	} else {
+		log.Printf("Token appears to be the same or not in need of refresh. Current expiry: %v", token.Expiry)
+	}
+
+	// Save the new token back to the file
+	newTokenData, err := json.Marshal(newToken)
+	if err != nil {
+		log.Printf("Error marshalling new token data: %v", err)
+		return err
+	}
+
+	if err := ioutil.WriteFile("/home/myuser/.credentials/youtube-go.json", newTokenData, 0600); err != nil {
+		log.Printf("Error writing new token to credentials file: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func cacheLiveStreamURL(apiKey, channelID string) error {
