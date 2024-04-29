@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/textproto"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -188,8 +189,9 @@ func sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the username matches "Dayoman"
-	if username != "Dayoman" {
+	// Check if the username matches "Dayoman" or "hp_az", case-insensitive
+	usernameLower := strings.ToLower(username)
+	if usernameLower != "dayoman" && usernameLower != "hp_az" {
 		http.Error(w, "Unauthorized: Incorrect user", http.StatusUnauthorized)
 		return
 	}
