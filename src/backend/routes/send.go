@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/textproto"
+	"os"
 	"strings"
 	"time"
 
@@ -20,21 +21,23 @@ import (
 	"google.golang.org/api/youtube/v3"
 )
 
-// Global variable for the chat bot, assuming you're managing one YouTube stream
-var chatBot *ytbot.LiveChatBot
-var config = &oauth2.Config{
-	ClientID:     "456484052696-173incl6ktid55uff5f9jboucvu742l7.apps.googleusercontent.com", // Replace with your actual client ID
-	ClientSecret: "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",                                      // Replace with your actual client secret
-	Endpoint:     google.Endpoint,
-	// RedirectURL is typically not needed for server-side token refresh
-}
+// Global variables
+var (
+	chatBot   *ytbot.LiveChatBot
+	config    *oauth2.Config
+	apiKey    = "AIzaSyBjKvYvbpwybafW7OdvAt5-GS61kds4vBI"
+	channelID = "UC2c4NxvHnbXs3NLpCm641ew" // Dayoman
+	// channelID = "UCHToAogHtFnv2uksbDzKsYA" // hp_az
+	// channelID = "UCSJ4gkVC6NrvII8umztf0Ow" // lofigirl
+)
 
 func init() {
-	apiKey := "AIzaSyBjKvYvbpwybafW7OdvAt5-GS61kds4vBI" // Retrieve API key from environment variable
-
-	// channelID := "UCHToAogHtFnv2uksbDzKsYA" // hp_az
-	// channelID := "UCSJ4gkVC6NrvII8umztf0Ow" // lofigirl
-	channelID := "UC2c4NxvHnbXs3NLpCm641ew" // dayoman
+	// Load OAuth2 configuration
+	var err error
+	config, err = loadConfig("client_secret.json")
+	if err != nil {
+		log.Fatalf("Unable to load OAuth2 configuration: %v", err)
+	}
 
 	// Initialize bot with current live stream URL
 	if err := cacheLiveStreamURL(apiKey, channelID); err == nil {
@@ -44,6 +47,18 @@ func init() {
 
 	// Start periodic refresh of YouTube Auth Token every 30 minutes
 	go refreshYouTubeAuthTokenEvery(30 * time.Minute)
+}
+
+func loadConfig(credentialFileName string) (*oauth2.Config, error) {
+	b, err := ioutil.ReadFile(credentialFileName)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read client secret file: %v", err)
+	}
+	config, err := google.ConfigFromJSON(b, youtube.YoutubeForceSslScope)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse client secret file to config: %v", err)
+	}
+	return config, nil
 }
 
 func startChatBot(url string) {
@@ -64,49 +79,48 @@ func refreshYouTubeAuthTokenEvery(interval time.Duration) {
 }
 
 func refreshYouTubeToken() error {
-	// Load the current credentials from the file
-	credsData, err := ioutil.ReadFile("/home/myuser/.credentials/youtube-go.json")
+	tokenFile := "youtube_token.json"
+	tok, err := tokenFromFile(tokenFile)
 	if err != nil {
-		log.Printf("Error reading credentials file: %v", err)
-		return err
+		return fmt.Errorf("unable to read token from file: %v", err)
 	}
 
-	var token oauth2.Token
-	if err := json.Unmarshal(credsData, &token); err != nil {
-		log.Printf("Error unmarshalling token data: %v", err)
-		return err
-	}
-
-	// Log the current token details
-	log.Printf("Current token expiry: %v, Valid: %v", token.Expiry, token.Valid())
-
-	// Refresh the token
-	tokenSource := config.TokenSource(context.Background(), &token)
+	tokenSource := config.TokenSource(context.Background(), tok)
 	newToken, err := tokenSource.Token()
 	if err != nil {
-		log.Printf("Error refreshing token: %v", err)
-		return err
+		return fmt.Errorf("unable to refresh token: %v", err)
 	}
 
-	if newToken.AccessToken != token.AccessToken {
-		log.Printf("New token acquired. Old expiry: %v, New expiry: %v", token.Expiry, newToken.Expiry)
+	// Log token details for debugging
+	log.Printf("Token details: AccessToken=%s, RefreshToken=%s, Expiry=%v", newToken.AccessToken, newToken.RefreshToken, newToken.Expiry)
+
+	if newToken.AccessToken != tok.AccessToken {
+		log.Printf("New token acquired. Old expiry: %v, New expiry: %v", tok.Expiry, newToken.Expiry)
 	} else {
-		log.Printf("Token appears to be the same or not in need of refresh. Current expiry: %v", token.Expiry)
+		log.Printf("Token appears to be the same or not in need of refresh. Current expiry: %v", tok.Expiry)
 	}
 
-	// Save the new token back to the file
-	newTokenData, err := json.Marshal(newToken)
+	return saveToken(tokenFile, newToken)
+}
+
+func tokenFromFile(file string) (*oauth2.Token, error) {
+	f, err := os.Open(file)
 	if err != nil {
-		log.Printf("Error marshalling new token data: %v", err)
-		return err
+		return nil, err
 	}
+	defer f.Close()
+	tok := &oauth2.Token{}
+	err = json.NewDecoder(f).Decode(tok)
+	return tok, err
+}
 
-	if err := ioutil.WriteFile("/home/myuser/.credentials/youtube-go.json", newTokenData, 0600); err != nil {
-		log.Printf("Error writing new token to credentials file: %v", err)
-		return err
+func saveToken(path string, token *oauth2.Token) error {
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return fmt.Errorf("unable to cache OAuth token: %v", err)
 	}
-
-	return nil
+	defer f.Close()
+	return json.NewEncoder(f).Encode(token)
 }
 
 func cacheLiveStreamURL(apiKey, channelID string) error {
@@ -148,24 +162,6 @@ func fetchLiveStreamURL(apiKey, channelID string) (string, error) {
 
 // sendMessageHandler handles requests to send messages to both Twitch and YouTube chats.
 func sendMessageHandler(w http.ResponseWriter, r *http.Request) {
-	apiKey := "AIzaSyBjKvYvbpwybafW7OdvAt5-GS61kds4vBI"
-	channelID := "UC2c4NxvHnbXs3NLpCm641ew"
-
-	err := cacheLiveStreamURL(apiKey, channelID)
-	if err != nil {
-		http.Error(w, "Failed to refresh YouTube live stream URL", http.StatusInternalServerError)
-		return
-	}
-
-	liveURL, err := redisClient.Get(ctx, "youtube:live:url").Result()
-	if err != nil {
-		http.Error(w, "Failed to retrieve live stream URL from cache", http.StatusInternalServerError)
-		return
-	}
-
-	// Reinitialize the bot with the new URL
-	startChatBot(liveURL)
-
 	// Parse request body to get the message content
 	var requestBody struct {
 		Message string `json:"message"`
@@ -199,16 +195,30 @@ func sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	// Send message to Twitch
 	if err := sendMessageToTwitch(sessionToken, "Dayoman", requestBody.Message); err != nil {
 		log.Printf("Error sending message to Twitch: %v", err)
-		// Consider how to handle partial failure
 	}
 
-	// Send message to YouTube using ytLiveChatBot
-	if len(chatBot.ChatWriters) > 0 {
+	// Attempt to send message to YouTube
+	if err := cacheLiveStreamURL(apiKey, channelID); err == nil {
+		liveURL, err := redisClient.Get(ctx, "youtube:live:url").Result()
+		if err == nil && liveURL != "" {
+			startChatBot(liveURL)
+		} else {
+			log.Println("No live URL available for YouTube.")
+		}
+	} else {
+		log.Println("Error caching YouTube live stream URL: ", err)
+	}
+
+	if chatBot != nil && len(chatBot.ChatWriters) > 0 {
 		for _, chatWriter := range chatBot.ChatWriters {
-			chatWriter <- requestBody.Message
+			select {
+			case chatWriter <- requestBody.Message:
+				log.Println("Message sent to YouTube via ytLiveChatBot:", requestBody.Message)
+			case <-time.After(5 * time.Second):
+				log.Println("Timeout sending message to YouTube via ytLiveChatBot:", requestBody.Message)
+			}
 			break // Send to the first stream only for simplicity
 		}
-		log.Println("Message sent to YouTube via ytLiveChatBot:", requestBody.Message)
 	} else {
 		log.Println("ytLiveChatBot is not connected to any YouTube live stream.")
 	}
