@@ -79,7 +79,7 @@ func refreshYouTubeAuthTokenEvery(interval time.Duration) {
 }
 
 func refreshYouTubeToken() error {
-	tokenFile := "youtube_token.json"
+	tokenFile := "/home/myuser/.credentials/youtube-go.json" // Ensure this path matches the Dockerfile path
 	tok, err := tokenFromFile(tokenFile)
 	if err != nil {
 		return fmt.Errorf("unable to read token from file: %v", err)
