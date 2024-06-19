@@ -162,14 +162,15 @@ function checkLoginStatus() {
     .then((sessionData) => {
       if (sessionData.services && sessionData.services.length > 0) {
         updateUIForLoggedInUser(sessionData.services);
-        initializeWebSocket(); // Initialize WebSocket connection here
       } else {
         updateUIForLoggedOutUser();
       }
+      initializeWebSocket(); // Initialize WebSocket connection here, regardless of login status
     })
     .catch((error) => {
       console.error("Error checking login status:", error);
       updateUIForLoggedOutUser();
+      initializeWebSocket(); // Initialize WebSocket connection even if there's an error
     });
 }
 
