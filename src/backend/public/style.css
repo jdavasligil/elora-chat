@@ -171,6 +171,5 @@ button {
 .header,
 #message-send-container {
   display: flex;
-  width: 100%; /* They take the full width of their container */
   flex-shrink: 1; /* Allow shrinkage when necessary */
 }
