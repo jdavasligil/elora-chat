@@ -198,30 +198,31 @@ func sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Attempt to send message to YouTube
-	if err := cacheLiveStreamURL(apiKey, channelID); err == nil {
-		liveURL, err := redisClient.Get(ctx, "youtube:live:url").Result()
-		if err == nil && liveURL != "" {
-			startChatBot(liveURL)
-		} else {
-			log.Println("No live URL available for YouTube.")
-		}
-	} else {
-		log.Println("Error caching YouTube live stream URL: ", err)
-	}
+	// TODO: uncomment this later once we have the secret(s)
+	// if err := cacheLiveStreamURL(apiKey, channelID); err == nil {
+	// 	liveURL, err := redisClient.Get(ctx, "youtube:live:url").Result()
+	// 	if err == nil && liveURL != "" {
+	// 		startChatBot(liveURL)
+	// 	} else {
+	// 		log.Println("No live URL available for YouTube.")
+	// 	}
+	// } else {
+	// 	log.Println("Error caching YouTube live stream URL: ", err)
+	// }
 
-	if chatBot != nil && len(chatBot.ChatWriters) > 0 {
-		for _, chatWriter := range chatBot.ChatWriters {
-			select {
-			case chatWriter <- requestBody.Message:
-				log.Println("Message sent to YouTube via ytLiveChatBot:", requestBody.Message)
-			case <-time.After(5 * time.Second):
-				log.Println("Timeout sending message to YouTube via ytLiveChatBot:", requestBody.Message)
-			}
-			break // Send to the first stream only for simplicity
-		}
-	} else {
-		log.Println("ytLiveChatBot is not connected to any YouTube live stream.")
-	}
+	// if chatBot != nil && len(chatBot.ChatWriters) > 0 {
+	// 	for _, chatWriter := range chatBot.ChatWriters {
+	// 		select {
+	// 		case chatWriter <- requestBody.Message:
+	// 			log.Println("Message sent to YouTube via ytLiveChatBot:", requestBody.Message)
+	// 		case <-time.After(5 * time.Second):
+	// 			log.Println("Timeout sending message to YouTube via ytLiveChatBot:", requestBody.Message)
+	// 		}
+	// 		break // Send to the first stream only for simplicity
+	// 	}
+	// } else {
+	// 	log.Println("ytLiveChatBot is not connected to any YouTube live stream.")
+	// }
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Message sent successfully to Twitch and YouTube"))
