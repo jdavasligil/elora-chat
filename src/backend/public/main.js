@@ -61,6 +61,11 @@ function initializeWebSocket() {
   };
 }
 
+function sanitizeMessage(message) {
+  // replace < and > with HTML entities to prevent XSS attacks
+  return message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function processMessageQueue() {
   // console.log("Processing message queue", messageQueue);
   if (messageQueue.length === 0) {
@@ -100,7 +105,7 @@ function processMessageQueue() {
     }
   });
 
-  let messageWithEmotes = message.message;
+  let messageWithEmotes = sanitizeMessage(message.message);
   if (message.emotes && message.emotes.length > 0) {
     message.emotes.forEach((emote) => {
       const emoteImg = document.createElement("img");
