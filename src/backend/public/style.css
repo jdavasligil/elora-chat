@@ -23,7 +23,7 @@ html {
   display: flex;
   flex-direction: column-reverse;
   flex: 1;
-  overflow-y: hidden;
+  overflow-y: auto;
   padding: 0 10px; /* Horizontal padding to match header */
 }
 
