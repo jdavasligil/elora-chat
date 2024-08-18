@@ -174,3 +174,43 @@ button {
   width: 100%; /* They take the full width of their container */
   flex-shrink: 1; /* Allow shrinkage when necessary */
 }
+
+/**
+ * Message effects
+ */
+.color-yellow {
+  color: #FFFF00;
+}
+
+.color-red {
+  color: #FF0000;
+}
+
+.color-green {
+  color: #00FF00;
+}
+
+.color-cyan {
+  color: #00FFFF;
+}
+
+.color-purple {
+  color: #FF00FF;
+}
+
+.color-rainbow {
+  background: linear-gradient(to right, #ef5350, #f48fb1, #7e57c2, #2196f3, #26c6da, #43a047, #eeff41, #f9a825, #ff5722);
+
+  background-clip: text;
+  -webkit-background-clip: text;
+  
+  -webkit-text-fill-color: transparent;
+}
+
+.effect-wave {
+  /* TODO: implement this */
+}
+
+.effect-shake {
+  /* TODO: implement this */
+}

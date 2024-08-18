@@ -66,6 +66,33 @@ function sanitizeMessage(message) {
   return message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function addMessageEffects(message) {
+  const colors = ['yellow', 'red', 'green', 'cyan', 'purple', 'rainbow'];
+  const colorCommands = colors.reduce((accumulator, color) => ({
+    ...accumulator,
+    [color]: `color-${color}`
+  }), {});
+
+  const commands = {
+    ...colorCommands,
+    wave: 'effect-wave',
+    shake: 'effect-shake'
+  };
+
+  const lastCommandIndex = message.indexOf(': ');
+  const effectNames = lastCommandIndex >= 0 ? message.substr(0, lastCommandIndex).split(':') : [];
+  const messageText = lastCommandIndex >= 0 ? message.substr(lastCommandIndex + 2) : message;
+  const effects = effectNames
+                  .map(effect => commands.hasOwnProperty(effect) ? commands[effect] : null)
+                  .filter(value => !!value)
+                  .join(' ');
+
+  // console.log(messageText);
+  // console.log(effects);
+
+  return { messageText, effects };
+}
+
 function processMessageQueue() {
   // console.log("Processing message queue", messageQueue);
   if (messageQueue.length === 0) {
@@ -106,6 +133,9 @@ function processMessageQueue() {
   });
 
   let messageWithEmotes = sanitizeMessage(message.message);
+  const { messageText, effects } = addMessageEffects(messageWithEmotes);
+  messageWithEmotes = messageText;
+
   if (message.emotes && message.emotes.length > 0) {
     message.emotes.forEach((emote) => {
       const emoteImg = document.createElement("img");
@@ -129,7 +159,7 @@ function processMessageQueue() {
 
   messageElement.innerHTML =
     badgesHTML +
-    `<b><span style="color: ${message.colour}">${message.author}:</span></b> ${messageWithEmotes}`;
+    `<b><span style="color: ${message.colour}">${message.author}:</span></b> <span class="${effects}">${messageWithEmotes}</span>`;
   // Prepend new message at the start of the container, which visually appears at the bottom
   container.insertBefore(messageElement, container.firstChild);
 
