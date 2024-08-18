@@ -22,7 +22,7 @@ import (
 var twitchOAuthConfig = &oauth2.Config{
 	ClientID:     "yzn1qir54by5q528tinhfranwu6o8c",
 	ClientSecret: "ilaak21804dqgecsx3cxrxnylmogn4",
-	RedirectURL:  "https://elora.chat/callback/twitch",
+	RedirectURL:  "http://wiz.elora.chat:8088/callback/twitch",
 	Scopes:       []string{"chat:edit", "chat:read"}, // Updated scopes
 	Endpoint:     twitch.Endpoint,                    // Make sure to import "golang.org/x/oauth2/twitch"
 }
