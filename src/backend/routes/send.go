@@ -46,7 +46,7 @@ func init() {
 	}
 
 	// Start periodic refresh of YouTube Auth Token every 30 minutes
-	go refreshYouTubeAuthTokenEvery(30 * time.Minute)
+	// go refreshYouTubeAuthTokenEvery(30 * time.Minute)
 }
 
 func loadConfig(credentialFileName string) (*oauth2.Config, error) {
