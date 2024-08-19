@@ -1,9 +1,12 @@
+const useDeployedApi = false; // NOTE: be sure to set this to false when building/deploying
+const deployedUrl = 'https://elorachat.wizg.xyz';
+
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
 }
 
 function loadImage(src) {
-  return `/imageproxy?url=${encodeURIComponent(src)}`;
+  return `${useDeployedApi ? deployedUrl : ''}/imageproxy?url=${encodeURIComponent(src)}`;
 }
 
 let ws;
@@ -14,7 +17,10 @@ let processing = false;
 function initializeWebSocket() {
   console.log("Initializing WebSocket");
   const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-  const wsUrl = `${wsProtocol}://${window.location.host}/ws/chat`;
+
+  const localUrl = `${wsProtocol}://${window.location.host}`;
+  const wsUrl = `${useDeployedApi ? deployedUrl : localUrl}/ws/chat`;
+  
   if (
     ws &&
     (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)
@@ -66,6 +72,35 @@ function sanitizeMessage(message) {
   return message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function addMessageEffects(message) {
+  const colors = [
+    'yellow', 'red', 'green', 'cyan', 'purple', 'pink', 'rainbow',
+    'glow1', 'glow2', 'glow3', 'flash1', 'flash2', 'flash3'
+  ];
+  const colorCommands = colors.reduce((accumulator, color) => ({
+    ...accumulator,
+    [color]: `color-${color}`
+  }), {});
+
+  const commands = {
+    ...colorCommands,
+    bold: 'text-bold',
+    italic: 'text-italic',
+    wave: 'effect-wave',
+    shake: 'effect-shake'
+  };
+
+  const lastCommandIndex = message.indexOf(': ');
+  const effectNames = lastCommandIndex >= 0 ? message.substr(0, lastCommandIndex).split(':') : [];
+  const messageText = lastCommandIndex >= 0 ? message.substr(lastCommandIndex + 2) : message;
+  const effects = effectNames
+                  .map(effect => commands.hasOwnProperty(effect) ? commands[effect] : null)
+                  .filter(value => !!value)
+                  .join(' ');
+
+  return { messageText, effects };
+}
+
 function processMessageQueue() {
   // console.log("Processing message queue", messageQueue);
   if (messageQueue.length === 0) {
@@ -106,6 +141,9 @@ function processMessageQueue() {
   });
 
   let messageWithEmotes = sanitizeMessage(message.message);
+  const { messageText, effects } = addMessageEffects(messageWithEmotes);
+  messageWithEmotes = messageText;
+
   if (message.emotes && message.emotes.length > 0) {
     message.emotes.forEach((emote) => {
       const emoteImg = document.createElement("img");
@@ -129,7 +167,7 @@ function processMessageQueue() {
 
   messageElement.innerHTML =
     badgesHTML +
-    `<b><span style="color: ${message.colour}">${message.author}:</span></b> ${messageWithEmotes}`;
+    `<b><span style="color: ${message.colour}">${message.author}:</span></b> <span class="${effects}">${messageWithEmotes}</span>`;
   // Prepend new message at the start of the container, which visually appears at the bottom
   container.insertBefore(messageElement, container.firstChild);
 
@@ -153,7 +191,7 @@ function processMessageQueue() {
 }
 
 function checkLoginStatus() {
-  fetch("/check-session", {
+  fetch(`${useDeployedApi ? deployedUrl : ''}/check-session`, {
     method: "GET",
     credentials: "include", // Important for cookies to be sent with the request
   })

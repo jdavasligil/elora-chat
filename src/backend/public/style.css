@@ -173,3 +173,157 @@ button {
   display: flex;
   flex-shrink: 1; /* Allow shrinkage when necessary */
 }
+
+/**
+ * Message effects
+ */
+.text-bold {
+  font-weight: bold;
+}
+
+.text-italic {
+  font-style: italic;
+}
+
+.color-yellow {
+  color: #FFFF00;
+}
+
+.color-red {
+  color: #FF0000;
+}
+
+.color-green {
+  color: #00FF00;
+}
+
+.color-cyan {
+  color: #00FFFF;
+}
+
+.color-purple {
+  color: #9C59D1;
+}
+
+.color-pink {
+  color: #FF00FF;
+}
+
+.color-rainbow {
+  background: linear-gradient(to right, #ef5350, #f48fb1, #7e57c2, #2196f3, #26c6da, #43a047, #eeff41, #f9a825, #ff5722);
+
+  background-clip: text;
+  -webkit-background-clip: text;
+  
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes flash1 {
+  0% {
+    color: #FF0000;
+  }
+  50% {
+    color: #FFFF00;
+  }
+}
+
+@keyframes flash2 {
+  0% {
+    color: #0000FF;
+  }
+  50% {
+    color: #00FFFF;
+  }
+}
+
+@keyframes flash3 {
+  0% {
+    color: #00B000;
+  }
+  50% {
+    color: #80FF80;
+  }
+}
+
+.color-flash1 {
+  animation: flash1 0.45s steps(1, end) infinite;
+}
+
+.color-flash2 {
+  animation: flash2 0.45s steps(1, end) infinite;
+}
+
+.color-flash3 {
+  animation: flash3 0.45s steps(1, end) infinite;
+}
+
+@keyframes glow1 {
+  0% {
+    color: #FF0000;
+  }
+  33% {
+    color: #00B000;
+  }
+  66% {
+    color: #0000FF;
+  }
+  100% {
+    color: #FF0000;
+  }
+}
+
+@keyframes glow2 {
+  0% {
+    color: #FF0000;
+  }
+  33% {
+    color: #800080;
+  }
+  66% {
+    color: #0000FF;
+  }
+  100% {
+    color: #FF0000;
+  }
+}
+
+@keyframes glow3 {
+  0% {
+    color: #FFFFFF;
+  }
+  25% {
+    color: #00B000;
+  }
+  50% {
+    color: #FFFFFF;
+  }
+  67.5% {
+    color: #00FFFF;
+  }
+  75% {
+    color: #0000FF;
+  }
+  100% {
+    color: #FFFFFF;
+  }
+}
+
+.color-glow1 {
+  animation: glow1 3s linear infinite;
+}
+
+.color-glow2 {
+  animation: glow2 3s linear infinite;
+}
+
+.color-glow3 {
+  animation: glow2 3s linear infinite;
+}
+
+.effect-wave {
+  /* TODO: implement this */
+}
+
+.effect-shake {
+  /* TODO: implement this */
+}
