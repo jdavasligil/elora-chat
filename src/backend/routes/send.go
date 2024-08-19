@@ -187,7 +187,7 @@ func sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Check if the username matches "Dayoman" or "hp_az", case-insensitive
 	usernameLower := strings.ToLower(username)
-	if usernameLower != "dayoman" && usernameLower != "hp_az" {
+	if usernameLower != "dayoman" && usernameLower != "hp_az" && usernameLower != "osrs_wiz" {
 		http.Error(w, "Unauthorized: Incorrect user", http.StatusUnauthorized)
 		return
 	}
