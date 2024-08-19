@@ -98,9 +98,6 @@ function addMessageEffects(message) {
                   .filter(value => !!value)
                   .join(' ');
 
-  // console.log(messageText);
-  // console.log(effects);
-
   return { messageText, effects };
 }
 
