@@ -73,7 +73,10 @@ function sanitizeMessage(message) {
 }
 
 function addMessageEffects(message) {
-  const colors = ['yellow', 'red', 'green', 'cyan', 'purple', 'rainbow'];
+  const colors = [
+    'yellow', 'red', 'green', 'cyan', 'purple', 'pink', 'rainbow',
+    'glow1', 'glow2', 'glow3', 'flash1', 'flash2', 'flash3'
+  ];
   const colorCommands = colors.reduce((accumulator, color) => ({
     ...accumulator,
     [color]: `color-${color}`
@@ -81,6 +84,8 @@ function addMessageEffects(message) {
 
   const commands = {
     ...colorCommands,
+    bold: 'text-bold',
+    italic: 'text-italic',
     wave: 'effect-wave',
     shake: 'effect-shake'
   };
