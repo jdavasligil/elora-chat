@@ -23,7 +23,7 @@ html {
   display: flex;
   flex-direction: column-reverse;
   flex: 1;
-  overflow-y: hidden;
+  overflow-y: auto;
   padding: 0 10px; /* Horizontal padding to match header */
 }
 
@@ -171,7 +171,6 @@ button {
 .header,
 #message-send-container {
   display: flex;
-  width: 100%; /* They take the full width of their container */
   flex-shrink: 1; /* Allow shrinkage when necessary */
 }
 
