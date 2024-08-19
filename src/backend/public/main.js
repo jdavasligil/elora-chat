@@ -1,9 +1,12 @@
+const useDeployedApi = false; // NOTE: be sure to set this to false when building/deploying
+const deployedUrl = 'https://elorachat.wizg.xyz';
+
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
 }
 
 function loadImage(src) {
-  return `/imageproxy?url=${encodeURIComponent(src)}`;
+  return `${useDeployedApi ? deployedUrl : ''}/imageproxy?url=${encodeURIComponent(src)}`;
 }
 
 let ws;
@@ -14,7 +17,10 @@ let processing = false;
 function initializeWebSocket() {
   console.log("Initializing WebSocket");
   const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-  const wsUrl = `${wsProtocol}://${window.location.host}/ws/chat`;
+
+  const localUrl = `${wsProtocol}://${window.location.host}`;
+  const wsUrl = `${useDeployedApi ? deployedUrl : localUrl}/ws/chat`;
+  
   if (
     ws &&
     (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)
@@ -183,7 +189,7 @@ function processMessageQueue() {
 }
 
 function checkLoginStatus() {
-  fetch("/check-session", {
+  fetch(`${useDeployedApi ? deployedUrl : ''}/check-session`, {
     method: "GET",
     credentials: "include", // Important for cookies to be sent with the request
   })
