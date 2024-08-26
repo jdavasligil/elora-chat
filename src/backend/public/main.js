@@ -1,5 +1,22 @@
-const useDeployedApi = false; // NOTE: be sure to set this to false when building/deploying
-const deployedUrl = 'https://elorachat.wizg.xyz';
+let config = {};
+let deployedUrl = "";
+const useDeployedApi = false; // Be sure to set this to true when building/deploying
+
+async function loadConfig() {
+  try {
+    const response = await fetch("/config.json");
+    config = await response.json();
+    deployedUrl = config.deployedUrl;
+  } catch (error) {
+    console.error("Error loading config:", error);
+  }
+}
+
+loadConfig().then(() => {
+  // Now that the config is loaded, initialize WebSocket, check login status, etc.
+  initializeWebSocket();
+  checkLoginStatus();
+});
 
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
@@ -263,48 +280,62 @@ function logout() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  checkLoginStatus();
+  loadConfig().then(() => {
+    // Functions that depend on the loaded config and possibly useDeployedApi
+    initializeWebSocket();
+    checkLoginStatus();
 
-  document
-    .getElementById("twitchLoginButton")
-    .addEventListener("click", function () {
-      window.location.href = "/login/twitch";
+    // Event listeners that can be initialized after the DOM content is fully loaded
+    document
+      .getElementById("twitchLoginButton")
+      .addEventListener("click", function () {
+        window.location.href = "/login/twitch";
+      });
+
+    document.getElementById("logoutButton").addEventListener("click", logout);
+
+    document
+      .getElementById("sendMessageButton")
+      .addEventListener("click", sendMessage);
+
+    document
+      .getElementById("messageInput")
+      .addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          sendMessage();
+        }
+      });
+
+    // Handling visibility change for reinitializing WebSocket or other tasks
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Other potentially added event listeners related to WebSocket or session status
+    window.addEventListener("pageshow", handleVisibilityChange);
+    window.addEventListener("online", handleVisibilityChange);
+    window.addEventListener("focus", handleVisibilityChange);
+
+    window.addEventListener("beforeunload", function () {
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
     });
 
-  // Removed event listener for YouTube login button
+    const popoutChatBtn = document.getElementById("popoutChatBtn");
+    const refreshServerBtn = document.getElementById("refreshServerBtn");
 
-  document.getElementById("logoutButton").addEventListener("click", logout);
-  document
-    .getElementById("sendMessageButton")
-    .addEventListener("click", sendMessage);
+    popoutChatBtn.addEventListener("click", () => {
+      const popoutFeatures =
+        "scrollbars=no,resizable=yes,status=no,location=no,toolbar=no,menubar=no";
+      window.open("chat.html", "ChatPopout", popoutFeatures);
+    });
 
-  // Remaining event listeners unchanged
-  document.addEventListener("visibilitychange", handleVisibilityChange);
-  window.addEventListener("pageshow", handleVisibilityChange);
-  window.addEventListener("online", handleVisibilityChange);
-  window.addEventListener("focus", handleVisibilityChange);
-
-  window.addEventListener("beforeunload", function () {
-    if (ws) {
-      ws.close();
-      ws = null;
-    }
-  });
-
-  const popoutChatBtn = document.getElementById("popoutChatBtn");
-  const refreshServerBtn = document.getElementById("refreshServerBtn");
-
-  popoutChatBtn.addEventListener("click", () => {
-    const popoutFeatures =
-      "scrollbars=no,resizable=yes,status=no,location=no,toolbar=no,menubar=no";
-    window.open("chat.html", "ChatPopout", popoutFeatures);
-  });
-
-  refreshServerBtn.addEventListener("click", () => {
-    fetch("/restart-server", { method: "POST" })
-      .then((response) => response.json())
-      .then((data) => console.log(data))
-      .catch((error) => console.error("Error:", error));
+    refreshServerBtn.addEventListener("click", () => {
+      fetch("/restart-server", { method: "POST" })
+        .then((response) => response.json())
+        .then((data) => console.log(data))
+        .catch((error) => console.error("Error:", error));
+    });
   });
 });
 

@@ -25,7 +25,7 @@ import (
 var (
 	chatBot   *ytbot.LiveChatBot
 	config    *oauth2.Config
-	apiKey    = "AIzaSyBjKvYvbpwybafW7OdvAt5-GS61kds4vBI"
+	apiKey    = os.Getenv("YOUTUBE_API_KEY")
 	channelID = "UC2c4NxvHnbXs3NLpCm641ew" // Dayoman
 	// channelID = "UCHToAogHtFnv2uksbDzKsYA" // hp_az
 	// channelID = "UCSJ4gkVC6NrvII8umztf0Ow" // lofigirl
