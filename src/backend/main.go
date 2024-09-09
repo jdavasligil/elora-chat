@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +14,20 @@ import (
 	"github.com/hpwn/EloraChat/src/backend/routes" // Ensure this is the correct path to your routes package
 )
 
+// Config holds the structure for the configuration JSON
+type Config struct {
+	DeployedUrl string `json:"deployedUrl"`
+}
+
+// serveConfig sends the application configuration as JSON
+func serveConfig(w http.ResponseWriter, r *http.Request) {
+	config := Config{
+		DeployedUrl: os.Getenv("DEPLOYED_URL"), // Make sure DEPLOYED_URL is set in your environment
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(config)
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -20,6 +35,9 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+
+	// Register the dynamic config serving route
+	r.HandleFunc("/config.json", serveConfig)
 
 	// Set up WebSocket chat routes
 	routes.SetupChatRoutes(r)
