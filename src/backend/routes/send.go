@@ -4,161 +4,158 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"net/textproto"
-	"os"
 	"strings"
-	"time"
 
 	"github.com/gorilla/mux"
-	ytbot "github.com/ketan-10/ytLiveChatBot"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/option"
-	"google.golang.org/api/youtube/v3"
+	// ytbot "github.com/ketan-10/ytLiveChatBot"
+	// "golang.org/x/oauth2"
+	// "golang.org/x/oauth2/google"
+	// "google.golang.org/api/option"
+	// "google.golang.org/api/youtube/v3"
 )
 
-// Global variables
-var (
-	chatBot   *ytbot.LiveChatBot
-	config    *oauth2.Config
-	apiKey    = "AIzaSyBjKvYvbpwybafW7OdvAt5-GS61kds4vBI"
-	channelID = "UC2c4NxvHnbXs3NLpCm641ew" // Dayoman
-	// channelID = "UCHToAogHtFnv2uksbDzKsYA" // hp_az
-	// channelID = "UCSJ4gkVC6NrvII8umztf0Ow" // lofigirl
-)
+// // Global variables
+// var (
+// 	chatBot   *ytbot.LiveChatBot
+// 	config    *oauth2.Config
+// 	apiKey    = "AIzaSyBjKvYvbpwybafW7OdvAt5-GS61kds4vBI"
+// 	channelID = "UC2c4NxvHnbXs3NLpCm641ew" // Dayoman
+// 	// channelID = "UCHToAogHtFnv2uksbDzKsYA" // hp_az
+// 	// channelID = "UCSJ4gkVC6NrvII8umztf0Ow" // lofigirl
+// )
 
-func init() {
-	// Load OAuth2 configuration
-	var err error
-	config, err = loadConfig("client_secret.json")
-	if err != nil {
-		log.Fatalf("Unable to load OAuth2 configuration: %v", err)
-	}
+// func init() {
+// 	// Load OAuth2 configuration
+// 	var err error
+// 	config, err = loadConfig("client_secret.json")
+// 	if err != nil {
+// 		log.Fatalf("Unable to load OAuth2 configuration: %v", err)
+// 	}
 
-	// Initialize bot with current live stream URL
-	if err := cacheLiveStreamURL(apiKey, channelID); err == nil {
-		liveURL, _ := redisClient.Get(ctx, "youtube:live:url").Result()
-		startChatBot(liveURL)
-	}
+// 	// Initialize bot with current live stream URL
+// 	if err := cacheLiveStreamURL(apiKey, channelID); err == nil {
+// 		liveURL, _ := redisClient.Get(ctx, "youtube:live:url").Result()
+// 		startChatBot(liveURL)
+// 	}
 
-	// Start periodic refresh of YouTube Auth Token every 30 minutes
-	// go refreshYouTubeAuthTokenEvery(30 * time.Minute)
-}
+// 	// Start periodic refresh of YouTube Auth Token every 30 minutes
+// 	// go refreshYouTubeAuthTokenEvery(30 * time.Minute)
+// }
 
-func loadConfig(credentialFileName string) (*oauth2.Config, error) {
-	b, err := ioutil.ReadFile(credentialFileName)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read client secret file: %v", err)
-	}
-	config, err := google.ConfigFromJSON(b, youtube.YoutubeForceSslScope)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse client secret file to config: %v", err)
-	}
-	return config, nil
-}
+// func loadConfig(credentialFileName string) (*oauth2.Config, error) {
+// 	b, err := ioutil.ReadFile(credentialFileName)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("unable to read client secret file: %v", err)
+// 	}
+// 	config, err := google.ConfigFromJSON(b, youtube.YoutubeForceSslScope)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("unable to parse client secret file to config: %v", err)
+// 	}
+// 	return config, nil
+// }
 
-func startChatBot(url string) {
-	chatBot = ytbot.NewLiveChatBot(&ytbot.LiveChatBotInput{
-		Urls: []string{url},
-	})
-}
+// func startChatBot(url string) {
+// 	chatBot = ytbot.NewLiveChatBot(&ytbot.LiveChatBotInput{
+// 		Urls: []string{url},
+// 	})
+// }
 
-func refreshYouTubeAuthTokenEvery(interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+// func refreshYouTubeAuthTokenEvery(interval time.Duration) {
+// 	ticker := time.NewTicker(interval)
+// 	defer ticker.Stop()
 
-	for range ticker.C {
-		if err := refreshYouTubeToken(); err != nil {
-			log.Printf("Error during scheduled token refresh: %v", err)
-		}
-	}
-}
+// 	for range ticker.C {
+// 		if err := refreshYouTubeToken(); err != nil {
+// 			log.Printf("Error during scheduled token refresh: %v", err)
+// 		}
+// 	}
+// }
 
-func refreshYouTubeToken() error {
-	tokenFile := "/home/myuser/.credentials/youtube-go.json" // Ensure this path matches the Dockerfile path
-	tok, err := tokenFromFile(tokenFile)
-	if err != nil {
-		return fmt.Errorf("unable to read token from file: %v", err)
-	}
+// func refreshYouTubeToken() error {
+// 	tokenFile := "/home/myuser/.credentials/youtube-go.json" // Ensure this path matches the Dockerfile path
+// 	tok, err := tokenFromFile(tokenFile)
+// 	if err != nil {
+// 		return fmt.Errorf("unable to read token from file: %v", err)
+// 	}
 
-	tokenSource := config.TokenSource(context.Background(), tok)
-	newToken, err := tokenSource.Token()
-	if err != nil {
-		return fmt.Errorf("unable to refresh token: %v", err)
-	}
+// 	tokenSource := config.TokenSource(context.Background(), tok)
+// 	newToken, err := tokenSource.Token()
+// 	if err != nil {
+// 		return fmt.Errorf("unable to refresh token: %v", err)
+// 	}
 
-	// Log token details for debugging
-	log.Printf("Token details: AccessToken=%s, RefreshToken=%s, Expiry=%v", newToken.AccessToken, newToken.RefreshToken, newToken.Expiry)
+// 	// Log token details for debugging
+// 	log.Printf("Token details: AccessToken=%s, RefreshToken=%s, Expiry=%v", newToken.AccessToken, newToken.RefreshToken, newToken.Expiry)
 
-	if newToken.AccessToken != tok.AccessToken {
-		log.Printf("New token acquired. Old expiry: %v, New expiry: %v", tok.Expiry, newToken.Expiry)
-	} else {
-		log.Printf("Token appears to be the same or not in need of refresh. Current expiry: %v", tok.Expiry)
-	}
+// 	if newToken.AccessToken != tok.AccessToken {
+// 		log.Printf("New token acquired. Old expiry: %v, New expiry: %v", tok.Expiry, newToken.Expiry)
+// 	} else {
+// 		log.Printf("Token appears to be the same or not in need of refresh. Current expiry: %v", tok.Expiry)
+// 	}
 
-	return saveToken(tokenFile, newToken)
-}
+// 	return saveToken(tokenFile, newToken)
+// }
 
-func tokenFromFile(file string) (*oauth2.Token, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	tok := &oauth2.Token{}
-	err = json.NewDecoder(f).Decode(tok)
-	return tok, err
-}
+// func tokenFromFile(file string) (*oauth2.Token, error) {
+// 	f, err := os.Open(file)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer f.Close()
+// 	tok := &oauth2.Token{}
+// 	err = json.NewDecoder(f).Decode(tok)
+// 	return tok, err
+// }
 
-func saveToken(path string, token *oauth2.Token) error {
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		return fmt.Errorf("unable to cache OAuth token: %v", err)
-	}
-	defer f.Close()
-	return json.NewEncoder(f).Encode(token)
-}
+// func saveToken(path string, token *oauth2.Token) error {
+// 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+// 	if err != nil {
+// 		return fmt.Errorf("unable to cache OAuth token: %v", err)
+// 	}
+// 	defer f.Close()
+// 	return json.NewEncoder(f).Encode(token)
+// }
 
-func cacheLiveStreamURL(apiKey, channelID string) error {
-	url, err := fetchLiveStreamURL(apiKey, channelID)
-	if err != nil {
-		log.Printf("Error fetching YouTube live stream URL: %v", err)
-		return err
-	}
+// func cacheLiveStreamURL(apiKey, channelID string) error {
+// 	url, err := fetchLiveStreamURL(apiKey, channelID)
+// 	if err != nil {
+// 		log.Printf("Error fetching YouTube live stream URL: %v", err)
+// 		return err
+// 	}
 
-	// Store the URL in Redis
-	err = redisClient.Set(ctx, "youtube:live:url", url, 0).Err() // No expiration
-	if err != nil {
-		log.Printf("Error caching YouTube live stream URL in Redis: %v", err)
-		return err
-	}
-	return nil
-}
+// 	// Store the URL in Redis
+// 	err = redisClient.Set(ctx, "youtube:live:url", url, 0).Err() // No expiration
+// 	if err != nil {
+// 		log.Printf("Error caching YouTube live stream URL in Redis: %v", err)
+// 		return err
+// 	}
+// 	return nil
+// }
 
-func fetchLiveStreamURL(apiKey, channelID string) (string, error) {
-	ctx := context.Background()
-	youtubeService, err := youtube.NewService(ctx, option.WithAPIKey(apiKey))
-	if err != nil {
-		return "", fmt.Errorf("error creating YouTube service: %v", err)
-	}
+// func fetchLiveStreamURL(apiKey, channelID string) (string, error) {
+// 	ctx := context.Background()
+// 	youtubeService, err := youtube.NewService(ctx, option.WithAPIKey(apiKey))
+// 	if err != nil {
+// 		return "", fmt.Errorf("error creating YouTube service: %v", err)
+// 	}
 
-	call := youtubeService.Search.List([]string{"id"}).ChannelId(channelID).EventType("live").Type("video").MaxResults(1)
-	response, err := call.Do()
-	if err != nil {
-		return "", fmt.Errorf("error making search API call: %v", err)
-	}
+// 	call := youtubeService.Search.List([]string{"id"}).ChannelId(channelID).EventType("live").Type("video").MaxResults(1)
+// 	response, err := call.Do()
+// 	if err != nil {
+// 		return "", fmt.Errorf("error making search API call: %v", err)
+// 	}
 
-	if len(response.Items) == 0 {
-		return "", fmt.Errorf("no live streams currently on this channel")
-	}
+// 	if len(response.Items) == 0 {
+// 		return "", fmt.Errorf("no live streams currently on this channel")
+// 	}
 
-	liveVideoID := response.Items[0].Id.VideoId
-	return fmt.Sprintf("https://www.youtube.com/watch?v=%s", liveVideoID), nil
-}
+// 	liveVideoID := response.Items[0].Id.VideoId
+// 	return fmt.Sprintf("https://www.youtube.com/watch?v=%s", liveVideoID), nil
+// }
 
 // sendMessageHandler handles requests to send messages to both Twitch and YouTube chats.
 func sendMessageHandler(w http.ResponseWriter, r *http.Request) {
