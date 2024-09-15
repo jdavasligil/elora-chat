@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -20,9 +21,9 @@ import (
 
 // Twitch OAuth configuration
 var twitchOAuthConfig = &oauth2.Config{
-	ClientID:     "yzn1qir54by5q528tinhfranwu6o8c",
-	ClientSecret: "ilaak21804dqgecsx3cxrxnylmogn4",
-	RedirectURL:  "https://elorachat.wizg.xyz/callback/twitch",
+	ClientID:     os.Getenv("TWITCH_CLIENT_ID"),
+	ClientSecret: os.Getenv("TWITCH_CLIENT_SECRET"),
+	RedirectURL:  os.Getenv("TWITCH_REDIRECT_URL"),
 	Scopes:       []string{"chat:edit", "chat:read"}, // Updated scopes
 	Endpoint:     twitch.Endpoint,                    // Make sure to import "golang.org/x/oauth2/twitch"
 }
