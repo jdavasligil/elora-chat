@@ -109,11 +109,16 @@ function addMessageEffects(message) {
 
   const lastCommandIndex = message.indexOf(': ');
   const effectNames = lastCommandIndex >= 0 ? message.substr(0, lastCommandIndex).split(':') : [];
-  const messageText = lastCommandIndex >= 0 ? message.substr(lastCommandIndex + 2) : message;
+  let messageText = lastCommandIndex >= 0 ? message.substr(lastCommandIndex + 2) : message;
   const effects = effectNames
                   .map(effect => commands.hasOwnProperty(effect) ? commands[effect] : null)
                   .filter(value => !!value)
                   .join(' ');
+
+  // if no effects were found, set the message text back to the original message content
+  if (effects.length <= 0) {
+    messageText = message;
+  }
 
   return { messageText, effects };
 }
