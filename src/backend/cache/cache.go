@@ -14,7 +14,7 @@ const (
 
 type CacheMessage struct {
 	ID    string
-	Value interface{}
+	Value any
 }
 
 // Cache supports key/value storage and append-only logging and streaming
@@ -27,7 +27,7 @@ type Cache interface {
 
 	// Stream operations
 
-	XAdd(stream string, values map[string]interface{}, maxlen int64) (string, error)
+	XAdd(stream string, values map[string]any, maxlen int64) (string, error)
 	XGetNew(stream string, key string) ([]CacheMessage, error)
 	XGetLastN(stream string, key string, count int64) ([]CacheMessage, error)
 

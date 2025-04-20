@@ -24,19 +24,19 @@ func NewRedisCache(ctx context.Context, opt *redis.Options) *RedisCache {
 	}
 }
 
-func (c RedisCache) Get(key string) (string, error) {
+func (c *RedisCache) Get(key string) (string, error) {
 	return c.client.Get(c.ctx, key).Result()
 }
 
-func (c RedisCache) Set(key string, value string, expiration time.Duration) error {
+func (c *RedisCache) Set(key string, value string, expiration time.Duration) error {
 	return c.client.Set(c.ctx, key, value, expiration).Err()
 }
 
-func (c RedisCache) Del(keys ...string) error {
+func (c *RedisCache) Del(keys ...string) error {
 	return c.client.Del(c.ctx, keys...).Err()
 }
 
-func (c RedisCache) XAdd(stream string, values map[string]interface{}, maxlen int64) (string, error) {
+func (c *RedisCache) XAdd(stream string, values map[string]any, maxlen int64) (string, error) {
 	return c.client.XAdd(c.ctx, &redis.XAddArgs{
 		Stream: stream,
 		Values: values,
@@ -46,7 +46,7 @@ func (c RedisCache) XAdd(stream string, values map[string]interface{}, maxlen in
 }
 
 // Get the newest value from a stream.
-func (c RedisCache) XGetNew(stream string, key string) ([]CacheMessage, error) {
+func (c *RedisCache) XGetNew(stream string, key string) ([]CacheMessage, error) {
 	streams, err := c.client.XRead(c.ctx, &redis.XReadArgs{
 		Streams: []string{stream, string(c.lastID)},
 		Block:   0,
@@ -73,7 +73,7 @@ func (c RedisCache) XGetNew(stream string, key string) ([]CacheMessage, error) {
 }
 
 // Get the last N values from a stream sorted by newest.
-func (c RedisCache) XGetLastN(stream string, key string, count int64) ([]CacheMessage, error) {
+func (c *RedisCache) XGetLastN(stream string, key string, count int64) ([]CacheMessage, error) {
 	messages, err := c.client.XRevRangeN(c.ctx, stream, "+", "-", count).Result()
 	if err != nil {
 		return nil, err
@@ -99,6 +99,6 @@ func (c RedisCache) XGetLastN(stream string, key string, count int64) ([]CacheMe
 	return values, nil
 }
 
-func (c RedisCache) Ping() (string, error) {
+func (c *RedisCache) Ping() (string, error) {
 	return c.client.Ping(c.ctx).Result()
 }
