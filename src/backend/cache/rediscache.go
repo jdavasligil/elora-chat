@@ -36,10 +36,10 @@ func (c *RedisCache) Del(keys ...string) error {
 	return c.client.Del(c.ctx, keys...).Err()
 }
 
-func (c *RedisCache) XAdd(stream string, values map[string]any, maxlen int64) (string, error) {
+func (c *RedisCache) XAdd(stream string, value any, maxlen int64) (string, error) {
 	return c.client.XAdd(c.ctx, &redis.XAddArgs{
 		Stream: stream,
-		Values: values,
+		Values: map[string]any{"message": value},
 		MaxLen: maxlen,
 		Approx: true,
 	}).Result()

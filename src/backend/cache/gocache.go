@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+type stream struct {
+
+	// Heap with subarray?
+}
+
 type goCacheValue struct {
 	Value     any
 	ExpiresAt time.Time
@@ -29,6 +34,7 @@ type GoCache struct {
 
 	// map[string]RingBuffer
 	streams sync.Map
+	nextID  uint64
 
 	nextSweep   time.Time
 	SweepPeriod time.Duration
