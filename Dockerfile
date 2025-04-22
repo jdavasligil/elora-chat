@@ -29,9 +29,6 @@ COPY --from=builder /app/server /app/
 # Copy the frontend files to the production image
 COPY src/backend/public /app/public
 
-# Copy client secret for ytLiveChatBot
-COPY client_secret.json /app/client_secret.json
-
 # Copy the Python script and requirements
 COPY python/fetch_chat.py /app/python/
 COPY python/requirements.txt /app/python/
@@ -44,9 +41,6 @@ RUN pip install --no-cache-dir -r /app/python/requirements.txt && \
 RUN adduser -D myuser && \
     mkdir -p /home/myuser/.credentials && \
     chown -R myuser:myuser /home/myuser/.credentials
-
-# Copy youtube-go.json into the .credentials directory as myuser
-#COPY --chown=myuser:myuser youtube-go.json /home/myuser/.credentials/youtube-go.json
 
 USER myuser
 
