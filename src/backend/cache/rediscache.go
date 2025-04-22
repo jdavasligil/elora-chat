@@ -46,7 +46,7 @@ func (c *RedisCache) XAdd(stream string, value any, maxlen int64) (string, error
 }
 
 // Get the newest value from a stream.
-func (c *RedisCache) XGetNew(stream string, key string) ([]CacheMessage, error) {
+func (c *RedisCache) XGetNew(stream string) ([]CacheMessage, error) {
 	streams, err := c.client.XRead(c.ctx, &redis.XReadArgs{
 		Streams: []string{stream, string(c.lastID)},
 		Block:   0,
@@ -64,7 +64,7 @@ func (c *RedisCache) XGetNew(stream string, key string) ([]CacheMessage, error) 
 	values := make([]CacheMessage, len(s.Messages))
 	for i, message := range s.Messages {
 		values[i].ID = message.ID
-		values[i].Value = message.Values[key]
+		values[i].Value = message.Values["message"]
 	}
 
 	copy(c.lastID, values[len(values)-1].ID)
@@ -73,7 +73,7 @@ func (c *RedisCache) XGetNew(stream string, key string) ([]CacheMessage, error) 
 }
 
 // Get the last N values from a stream sorted by newest.
-func (c *RedisCache) XGetLastN(stream string, key string, count int64) ([]CacheMessage, error) {
+func (c *RedisCache) XGetLastN(stream string, count int64) ([]CacheMessage, error) {
 	messages, err := c.client.XRevRangeN(c.ctx, stream, "+", "-", count).Result()
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func (c *RedisCache) XGetLastN(stream string, key string, count int64) ([]CacheM
 		message := messages[i]
 
 		values[vIdx].ID = message.ID
-		values[vIdx].Value = message.Values[key]
+		values[vIdx].Value = message.Values["message"]
 
 		if message.ID > lastID {
 			lastID = message.ID

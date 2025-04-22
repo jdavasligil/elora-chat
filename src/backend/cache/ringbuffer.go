@@ -3,23 +3,21 @@ package cache
 import "unsafe"
 
 type RingBuffer[T any] struct {
-	back     int
-	buf      []T
-	length   int
-	capacity int
+	back   int
+	buf    []T
+	length int
 }
 
 func NewRingBuffer[T any](capacity int) *RingBuffer[T] {
 	return &RingBuffer[T]{
-		buf:      make([]T, capacity),
-		capacity: capacity,
+		buf: make([]T, capacity),
 	}
 }
 
 func (rb *RingBuffer[T]) Push(t T) {
 	rb.buf[rb.back] = t
-	rb.back = (rb.back + 1) % rb.capacity
-	if rb.length < rb.capacity {
+	rb.back = (rb.back + 1) % cap(rb.buf)
+	if rb.length < cap(rb.buf) {
 		rb.length += 1
 	}
 }
@@ -32,7 +30,7 @@ func (rb *RingBuffer[T]) Pop() T {
 
 	rb.length -= 1
 
-	return rb.buf[(rb.capacity+(rb.back-rb.length-1))%rb.capacity]
+	return rb.buf[(cap(rb.buf)+(rb.back-rb.length-1))%cap(rb.buf)]
 }
 
 func (rb *RingBuffer[T]) Peek() T {
@@ -41,7 +39,7 @@ func (rb *RingBuffer[T]) Peek() T {
 		return noop
 	}
 
-	return rb.buf[(rb.capacity+(rb.back-rb.length))%rb.capacity]
+	return rb.buf[(cap(rb.buf)+(rb.back-rb.length))%cap(rb.buf)]
 }
 
 func (rb *RingBuffer[T]) Len() int {
@@ -53,7 +51,7 @@ func (rb *RingBuffer[T]) IsEmpty() bool {
 }
 
 func (rb *RingBuffer[T]) IsFull() bool {
-	return rb.length == rb.capacity
+	return rb.length == cap(rb.buf)
 }
 
 func (rb *RingBuffer[T]) MemUsage() uintptr {

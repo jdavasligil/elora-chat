@@ -4,21 +4,22 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"sync"
 	"time"
 )
 
-type stream struct {
-
-	// Heap with subarray?
+type Stream struct {
+	nextID uint64
+	buffer *RingBuffer[CacheMessage]
 }
 
-type goCacheValue struct {
+type GoCacheValue struct {
 	Value     any
 	ExpiresAt time.Time
 }
 
-func (cv goCacheValue) isExpired() bool {
+func (cv GoCacheValue) isExpired() bool {
 	return time.Now().After(cv.ExpiresAt)
 }
 
@@ -32,9 +33,8 @@ type GoCache struct {
 	store   sync.Map
 	expired []string
 
-	// map[string]RingBuffer
+	// map[string]Stream
 	streams sync.Map
-	nextID  uint64
 
 	nextSweep   time.Time
 	SweepPeriod time.Duration
@@ -63,7 +63,7 @@ func (c *GoCache) Get(key string) (string, error) {
 		err = errors.New(fmt.Sprintf("cache: key %s not found.\n", key))
 	}
 
-	value := v.(goCacheValue)
+	value := v.(GoCacheValue)
 
 	if value.isExpired() {
 		err = errors.New(fmt.Sprintf("cache: value expired at %s\n", value.ExpiresAt.String()))
@@ -75,7 +75,12 @@ func (c *GoCache) Get(key string) (string, error) {
 
 // Zero expiration means the key has no expiration time.
 func (c *GoCache) Set(key string, value string, expiration time.Duration) error {
-	c.store.Store(key, goCacheValue{value, time.Now().Add(expiration)})
+	t := time.Now()
+	if expiration == 0 {
+		c.store.Store(key, GoCacheValue{value, t.Add(time.Hour * 8760)})
+	} else {
+		c.store.Store(key, GoCacheValue{value, t.Add(expiration)})
+	}
 	return nil
 }
 
@@ -86,38 +91,50 @@ func (c *GoCache) Del(keys ...string) error {
 	return nil
 }
 
-// Note that ring buffers are int32 limited in maxlen
-//
-//	_, err = redisClient.XAdd(ctx, &redis.XAddArgs{
-//		Stream: "chatMessages",
-//		Values: map[string]interface{}{"message": string(modifiedMessage)},
-//		MaxLen: 100,
-//		Approx: true,
-//	}).Result()
-//
-// REF: https://redis.io/docs/latest/develop/data-types/streams/
-// TODO: Implement this shit properly. Do we need ring buffers? If so where?
-func (c *GoCache) XAdd(stream string, values map[string]any, maxlen int64) (string, error) {
-	if values == nil {
-		return "", errors.New("cache: values is a nil map")
-	}
+func (c *GoCache) XAdd(stream string, value any, maxlen int64) (string, error) {
 	if maxlen > math.MaxInt32 {
 		return "", errors.New(fmt.Sprintf("cache: max length of ring buffer is %d\n", math.MaxInt32))
 	}
-	rb := NewRingBuffer[map[string]any](int(maxlen))
-	c.streams.LoadOrStore(stream, rb)
-
+	v, ok := c.streams.Load(stream)
+	if ok {
+		s, _ := v.(Stream)
+		s.buffer.Push(CacheMessage{strconv.FormatUint(s.nextID, 36), value})
+		s.nextID++
+		return stream, nil
+	}
+	rb := NewRingBuffer[CacheMessage](int(maxlen))
+	rb.Push(CacheMessage{strconv.FormatUint(0, 36), value})
+	c.streams.Store(stream, Stream{buffer: rb, nextID: 1})
 	return stream, nil
 }
 
-// TODO:
-func (c *GoCache) XGetNew(stream string, key string) ([]CacheMessage, error) {
-	return nil, nil
+func (c *GoCache) XGetNew(stream string) ([]CacheMessage, error) {
+	v, ok := c.streams.Load(stream)
+	if !ok {
+		return []CacheMessage{}, errors.New(fmt.Sprintf("cache: stream [%s] does not exist\n", stream))
+	}
+	s, _ := v.(Stream)
+	msgs := make([]CacheMessage, s.buffer.length)
+	for range s.buffer.length {
+		msgs = append(msgs, s.buffer.Pop())
+	}
+	return msgs, nil
 }
 
-// TODO:
-func (c *GoCache) XGetLastN(stream string, key string, count int64) ([]CacheMessage, error) {
-	return nil, nil
+func (c *GoCache) XGetLastN(stream string, count int64) ([]CacheMessage, error) {
+	v, ok := c.streams.Load(stream)
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("cache: stream [%s] does not exist\n", stream))
+	}
+	s, _ := v.(Stream)
+	if s.buffer.IsEmpty() {
+		return nil, errors.New("cache: buffer is empty")
+	}
+	msgs := make([]CacheMessage, 0, min(int(count), s.buffer.length))
+	for range cap(msgs) {
+		msgs = append(msgs, s.buffer.Pop())
+	}
+	return msgs, nil
 }
 
 // For speed, the expiration cache never gets shrunk.
@@ -129,7 +146,7 @@ func (c *GoCache) Clean() {
 // Search keys for expired values and mark them for removal.
 func (c *GoCache) Sweep() {
 	c.store.Range(func(key, value any) bool {
-		if value.(goCacheValue).isExpired() {
+		if value.(GoCacheValue).isExpired() {
 			c.expired = append(c.expired, key.(string))
 		}
 		return true

@@ -24,8 +24,8 @@ type Cache interface {
 	Del(keys ...string) error
 
 	XAdd(stream string, value any, maxlen int64) (string, error)
-	XGetNew(stream string, key string) ([]CacheMessage, error)
-	XGetLastN(stream string, key string, count int64) ([]CacheMessage, error)
+	XGetNew(stream string) ([]CacheMessage, error)
+	XGetLastN(stream string, count int64) ([]CacheMessage, error)
 
 	Ping() (string, error)
 }
