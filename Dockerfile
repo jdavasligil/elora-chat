@@ -46,7 +46,7 @@ RUN adduser -D myuser && \
     chown -R myuser:myuser /home/myuser/.credentials
 
 # Copy youtube-go.json into the .credentials directory as myuser
-COPY --chown=myuser:myuser youtube-go.json /home/myuser/.credentials/youtube-go.json
+#COPY --chown=myuser:myuser youtube-go.json /home/myuser/.credentials/youtube-go.json
 
 USER myuser
 

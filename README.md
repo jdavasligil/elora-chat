@@ -30,9 +30,13 @@ Inspired by pioneers like DougDoug, EloraChat aspires to revolutionize chat inte
 
 - Navigate to the project directory: `cd EloraChat`
 
-- Install dependencies: `go get ./...`
+- Ensure [Docker](https://docs.docker.com/get-started/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/linux/) are installed and configured.
 
-- Start the server: `go run src/backend/main.go`
+- Create environment variables: `echo "REDIS_ADDR=redis:6379\nREDIS_PASSWORD=\nTWITCH_CLIENT_ID=\nTWITCH_CLIENT_SECRET=\nTWITCH_REDIRECT_URL=\nYOUTUBE_API_KEY=\nPORT=8080\nDEPLOYED_URL=https://localhost:8080/" > .env`
+
+- Start the server: `docker compose up`
+
+- Connect with your broswer to [http://localhost:8080/](http://localhost:8080/)!
 
 ## Usage ⌨️
 
