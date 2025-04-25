@@ -96,7 +96,10 @@ func init() {
 			Platform:   "twitch",
 			PlatformID: "39226538",
 		},
-		FFZ: true,
+		FFZ: &emodl.FFZOptions{
+			Platform:   "twitch",
+			PlatformID: "39226538",
+		},
 	})
 	emoteCacheTmp, err := downloader.Load()
 	if err != nil {
