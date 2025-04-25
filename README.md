@@ -10,7 +10,7 @@ EloraChat is a versatile chat application designed to unify the streaming experi
 
 ## Why? 🤔
 
-On 1/22/24, Dayo expressed the need for a streamlined solution to manage chats and alerts during his streams. He wished to move away from unreliable bots and desired a human touch to his alert systems. Our motivation is to enhance audience interaction and provide a seamless viewing experience across platforms, setting a new standard for multi-stream chats.
+On 1/22/24, [Dayoman](https://twitch.tv/dayoman) expressed the need for a streamlined solution to manage chats and alerts during his streams. He wished to move away from unreliable bots and desired a human touch to his alert systems. Our motivation is to enhance audience interaction and provide a seamless viewing experience across platforms, setting a new standard for multi-stream chats.
 
 EloraChat aims to:
 
@@ -44,6 +44,6 @@ EloraChat is easy to use. Simply start the server and connect your streaming pla
 
 ## Contributing 🧑🏼‍💻
 
-If you have ideas for improvement or want to contribute to EloraChat, feel free to create a pull request or contact Hayden for collaboration.
+If you have ideas for improvement or want to contribute to elora-chat, feel free to create a pull request or contact Hayden for collaboration.
 
 Happy streaming! 🎮📹👾
