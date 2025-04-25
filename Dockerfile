@@ -1,5 +1,5 @@
 # Start with a base Go image to build your application
-FROM golang:1.20-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 # Install git for fetching Go dependencies
 RUN apk add --no-cache git
