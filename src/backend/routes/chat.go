@@ -16,6 +16,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/jdavasligil/emodl"
 )
 
 // Initialize a Redis client as a global variable.
@@ -28,6 +30,8 @@ var upgrader = websocket.Upgrader{
 		return true // Allow all origins for simplicity; adjust as needed for security
 	},
 }
+
+var emoteCache map[string]Emote
 
 type Image struct {
 	URL    string `json:"url"`
@@ -80,6 +84,38 @@ func init() {
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
+
+	// Load third party emotes
+	downloader := emodl.NewDownloader(emodl.DownloaderOptions{
+		// TEMP: (Dayoman ID hard coded)
+		SevenTV: &emodl.SevenTVOptions{
+			Platform:   "twitch",
+			PlatformID: "39226538",
+		},
+		BTTV: &emodl.BTTVOptions{
+			Platform:   "twitch",
+			PlatformID: "39226538",
+		},
+		FFZ: true,
+	})
+	emoteCacheTmp, err := downloader.Load()
+	if err != nil {
+		log.Printf("Failed to load third party emotes: %v", err)
+	}
+	emoteCache = make(map[string]Emote, len(emoteCacheTmp))
+	for name, emote := range emoteCacheTmp {
+		emoteCache[name] = Emote{
+			ID:        emote.ID,
+			Name:      emote.Name,
+			Locations: emote.Locations,
+			Images:    []Image{Image(emote.Images[0])},
+		}
+	}
+	// DEBUG
+	// log.Println("3P EMOTES SUPPORTED")
+	// for _, e := range emoteCache {
+	// 	log.Println(e.Name)
+	// }
 }
 
 func StartChatFetch(urls []string) {
@@ -134,6 +170,14 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 			msg.Source = "Twitch"
 		} else if strings.Contains(url, "youtube.com") {
 			msg.Source = "YouTube"
+		}
+
+		// Find third party emotes in chat message
+		tokens := strings.Fields(msg.Message)
+		for _, tok := range tokens {
+			if e, ok := emoteCache[tok]; ok {
+				msg.Emotes = append(msg.Emotes, e)
+			}
 		}
 
 		// Re-marshal the message with the Source set.
