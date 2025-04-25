@@ -346,18 +346,18 @@ func getUsernameFromSession(sessionToken string) (string, error) {
 		return "", fmt.Errorf("error retrieving session data from Redis: %v", err)
 	}
 
-	var sessionData map[string]interface{}
+	var sessionData map[string]any
 	if err := json.Unmarshal([]byte(sessionDataJson), &sessionData); err != nil {
 		return "", fmt.Errorf("error unmarshalling session data: %v", err)
 	}
 
 	// Assuming the username is nested under "data" which is an array of user information
-	userData, ok := sessionData["data"].([]interface{})
+	userData, ok := sessionData["data"].([]any)
 	if !ok || len(userData) == 0 {
 		return "", fmt.Errorf("user data is not found or is not in the expected format")
 	}
 
-	userMap, ok := userData[0].(map[string]interface{})
+	userMap, ok := userData[0].(map[string]any)
 	if !ok {
 		return "", fmt.Errorf("user data format is incorrect or empty")
 	}
@@ -379,7 +379,7 @@ func getTwitchOAuthToken(sessionToken string) (string, error) {
 	}
 
 	// Parse session data to extract the Twitch OAuth token
-	var sessionData map[string]interface{}
+	var sessionData map[string]any
 	if err := json.Unmarshal([]byte(sessionDataJson), &sessionData); err != nil {
 		return "", fmt.Errorf("error unmarshalling session data: %v", err)
 	}

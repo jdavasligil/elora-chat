@@ -146,7 +146,7 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 		// Add the modified message to Redis Stream.
 		_, err = redisClient.XAdd(ctx, &redis.XAddArgs{
 			Stream: "chatMessages",
-			Values: map[string]interface{}{"message": string(modifiedMessage)},
+			Values: map[string]any{"message": string(modifiedMessage)},
 			MaxLen: 100,
 			Approx: true,
 		}).Result()

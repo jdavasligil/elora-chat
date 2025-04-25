@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -106,14 +106,14 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		http.Error(w, "Failed to read response body", http.StatusInternalServerError)
 		return
 	}
 
 	// Unmarshal the user data
-	var userData map[string]interface{}
+	var userData map[string]any
 	if err = json.Unmarshal(body, &userData); err != nil {
 		http.Error(w, "Failed to parse user data: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -154,9 +154,9 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func updateSessionDataForService(w http.ResponseWriter, userData map[string]interface{}, service string, sessionToken string) {
+func updateSessionDataForService(w http.ResponseWriter, userData map[string]any, service string, sessionToken string) {
 	// Initialize existing session data map
-	existingSessionData := make(map[string]interface{})
+	existingSessionData := make(map[string]any)
 
 	// Retrieve existing session data from Redis, if available
 	existingSessionDataJson, err := redisClient.Get(ctx, fmt.Sprintf("session:%s", sessionToken)).Result()
@@ -170,10 +170,10 @@ func updateSessionDataForService(w http.ResponseWriter, userData map[string]inte
 	}
 
 	// Check if services key exists and is a slice, then update or add the current service
-	services, ok := existingSessionData["services"].([]interface{})
+	services, ok := existingSessionData["services"].([]any)
 	if !ok {
 		// Services key does not exist or is not a slice, initialize it
-		services = []interface{}{}
+		services = []any{}
 	}
 	if !contains(services, service) {
 		services = append(services, service)
@@ -208,7 +208,7 @@ func updateSessionDataForService(w http.ResponseWriter, userData map[string]inte
 }
 
 // Helper function to check if a service is already in the services slice
-func contains(slice []interface{}, str string) bool {
+func contains(slice []any, str string) bool {
 	for _, v := range slice {
 		if s, ok := v.(string); ok && s == str {
 			return true
@@ -288,7 +288,7 @@ func SessionMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		var sessionData map[string]interface{}
+		var sessionData map[string]any
 		err = json.Unmarshal([]byte(sessionDataJson), &sessionData)
 		if err != nil {
 			log.Printf("Error unmarshalling session data: %v\n", err)
@@ -296,7 +296,7 @@ func SessionMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		services, ok := sessionData["services"].([]interface{})
+		services, ok := sessionData["services"].([]any)
 		if !ok {
 			log.Println("Services array missing or incorrect format in session data")
 			http.Error(w, "Unauthorized: Required services not found", http.StatusUnauthorized)
@@ -387,7 +387,7 @@ func refreshToken(service string, sessionToken string) error {
 		return fmt.Errorf("failed to retrieve session data: %v", err)
 	}
 
-	var sessionData map[string]interface{}
+	var sessionData map[string]any
 	err = json.Unmarshal([]byte(sessionDataJson), &sessionData)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal session data: %v", err)
@@ -413,7 +413,7 @@ func refreshToken(service string, sessionToken string) error {
 	}
 
 	// Prepare userData with the new token information
-	userData := map[string]interface{}{
+	userData := map[string]any{
 		fmt.Sprintf("%s_token", service): newToken.AccessToken,
 		"refresh_token":                  newToken.RefreshToken,
 		"token_expiry":                   newToken.Expiry.Unix(),
