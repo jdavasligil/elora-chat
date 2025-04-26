@@ -217,6 +217,7 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 
 	// Channel to signal closure of WebSocket connection
 	done := make(chan struct{})
+	messageChan := make(chan []byte, 8)
 
 	lastID := "0" // Start from the beginning of the stream
 
@@ -256,25 +257,26 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 				for _, message := range stream.Messages {
 					// Before sending a message to the client
 					// log.Printf("Sending message to client: %s\n", message)
-					if err := conn.WriteMessage(websocket.TextMessage, []byte(message.Values["message"].(string))); err != nil {
-						if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
-							log.Println("WebSocket write error:", err)
-						}
-						return
-					}
+					messageChan <- []byte(message.Values["message"].(string))
 					lastID = message.ID // Update last ID to the newest message
 				}
 			}
 		}
 	}()
 
-	// Keep-alive go routine
+	// Websocket writer
 	go func() {
+		// Keep alive ticker
 		ticker := time.NewTicker(20 * time.Second)
 		defer ticker.Stop()
 
 		for {
 			select {
+			case m := <-messageChan:
+				if err := conn.WriteMessage(websocket.TextMessage, m); err != nil {
+					log.Println("WebSocket write error:", err)
+					return
+				}
 			case <-ticker.C:
 				if err := conn.WriteMessage(websocket.TextMessage, []byte("__keepalive__")); err != nil {
 					log.Println("Failed to send keep-alive message:", err)
