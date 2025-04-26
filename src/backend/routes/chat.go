@@ -176,11 +176,15 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 		}
 
 		// Find third party emotes in chat message
+		uniqueEmotes := map[string]struct{}{}
 		tokens := strings.Fields(msg.Message)
 		for _, tok := range tokens {
 			if e, ok := emoteCache[tok]; ok {
-				msg.Emotes = append(msg.Emotes, e)
+				uniqueEmotes[e.Name] = struct{}{}
 			}
+		}
+		for name := range uniqueEmotes {
+			msg.Emotes = append(msg.Emotes, emoteCache[name])
 		}
 
 		// Re-marshal the message with the Source set.
