@@ -147,6 +147,7 @@ func monitorAndRestartChatFetch(url, pythonExecPath, fetchChatScript string) {
 
 func startChatFetch(url, pythonExecPath, fetchChatScript string) *exec.Cmd {
 	cmd := exec.Command(pythonExecPath, "-u", fetchChatScript, url)
+	cmd.Stderr = os.Stderr
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatal("Failed to create stdout pipe:", err)
