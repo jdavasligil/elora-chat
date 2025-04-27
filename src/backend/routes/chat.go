@@ -141,12 +141,14 @@ func monitorAndRestartChatFetch(url, pythonExecPath, fetchChatScript string) {
 		}
 
 		// Wait for a short duration before restarting to prevent rapid restart loops
-		time.Sleep(10 * time.Second)
+		log.Println("Restarting chat fetch...")
+		time.Sleep(1 * time.Second)
 	}
 }
 
 func startChatFetch(url, pythonExecPath, fetchChatScript string) *exec.Cmd {
 	cmd := exec.Command(pythonExecPath, "-u", fetchChatScript, url)
+	cmd.Stderr = os.Stderr
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatal("Failed to create stdout pipe:", err)
@@ -155,6 +157,8 @@ func startChatFetch(url, pythonExecPath, fetchChatScript string) *exec.Cmd {
 	if err := cmd.Start(); err != nil {
 		log.Fatal("Failed to start command:", err)
 	}
+
+	log.Println("Fetching chat from URL: ", url)
 
 	go processChatOutput(stdout, url)
 	return cmd
@@ -176,11 +180,15 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 		}
 
 		// Find third party emotes in chat message
+		uniqueEmotes := map[string]struct{}{}
 		tokens := strings.Fields(msg.Message)
 		for _, tok := range tokens {
 			if e, ok := emoteCache[tok]; ok {
-				msg.Emotes = append(msg.Emotes, e)
+				uniqueEmotes[e.Name] = struct{}{}
 			}
+		}
+		for name := range uniqueEmotes {
+			msg.Emotes = append(msg.Emotes, emoteCache[name])
 		}
 
 		// Re-marshal the message with the Source set.
@@ -217,6 +225,7 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 
 	// Channel to signal closure of WebSocket connection
 	done := make(chan struct{})
+	messageChan := make(chan []byte, 8)
 
 	lastID := "0" // Start from the beginning of the stream
 
@@ -256,25 +265,26 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 				for _, message := range stream.Messages {
 					// Before sending a message to the client
 					// log.Printf("Sending message to client: %s\n", message)
-					if err := conn.WriteMessage(websocket.TextMessage, []byte(message.Values["message"].(string))); err != nil {
-						if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
-							log.Println("WebSocket write error:", err)
-						}
-						return
-					}
+					messageChan <- []byte(message.Values["message"].(string))
 					lastID = message.ID // Update last ID to the newest message
 				}
 			}
 		}
 	}()
 
-	// Keep-alive go routine
+	// Websocket writer
 	go func() {
+		// Keep alive ticker
 		ticker := time.NewTicker(20 * time.Second)
 		defer ticker.Stop()
 
 		for {
 			select {
+			case m := <-messageChan:
+				if err := conn.WriteMessage(websocket.TextMessage, m); err != nil {
+					log.Println("WebSocket write error:", err)
+					return
+				}
 			case <-ticker.C:
 				if err := conn.WriteMessage(websocket.TextMessage, []byte("__keepalive__")); err != nil {
 					log.Println("Failed to send keep-alive message:", err)

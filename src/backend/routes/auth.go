@@ -331,7 +331,7 @@ func sessionCheckHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// If the session token is not found, it means the user is not logged in.
 		// Instead of returning an error, return a response indicating no session is active.
-		log.Println("Session token not found:", err)
+		// log.Println("Session token not found:", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"services": []}`)) // Indicate no services are logged in.
 		return
