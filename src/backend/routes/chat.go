@@ -141,7 +141,8 @@ func monitorAndRestartChatFetch(url, pythonExecPath, fetchChatScript string) {
 		}
 
 		// Wait for a short duration before restarting to prevent rapid restart loops
-		time.Sleep(10 * time.Second)
+		log.Println("Restarting chat fetch...")
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -156,6 +157,8 @@ func startChatFetch(url, pythonExecPath, fetchChatScript string) *exec.Cmd {
 	if err := cmd.Start(); err != nil {
 		log.Fatal("Failed to start command:", err)
 	}
+
+	log.Println("Fetching chat from URL: ", url)
 
 	go processChatOutput(stdout, url)
 	return cmd
