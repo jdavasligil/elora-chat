@@ -16,8 +16,6 @@ const (
 
 const TextEffectSep = ":"
 
-const TokenRuneLimit = 512
-
 var TextEffects = map[string]struct{}{
 	"wave":   {},
 	"wave2":  {},
@@ -140,7 +138,7 @@ func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 
 		// Scan the rest of the message for emotes
 		for scanner.Scan() {
-			word := scanner.Text()
+			word = scanner.Text()
 
 			// Check for emote
 			if emote, ok := p.EmoteCache[word]; ok {
