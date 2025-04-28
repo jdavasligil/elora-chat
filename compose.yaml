@@ -12,6 +12,18 @@ services:
       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
       - PORT=${PORT}
       - DEPLOYED_URL=${DEPLOYED_URL}
+    develop:
+      watch:
+        - action: sync
+          path: ./src/backend/public
+          target: /app/public
+        - action: sync+restart
+          path: ./python
+          target: /app/python
+        - action: rebuild
+          path: ./src/backend
+          target: /app
+          include: "**/*.go"
   redis:
     image: "redis:alpine"
     ports:
