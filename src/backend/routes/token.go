@@ -58,11 +58,13 @@ type Tokenizer struct {
 //	effect:text
 //	color:effect:text
 //	effect:colour:text
-func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int) bool {
+//
+// Returns: (yield result, last word)
+func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int) (bool, string) {
 
 	// Base Case: Empty string
 	if word == "" {
-		return true
+		return true, ""
 	}
 
 	tok := Token{Type: TokenTypeText, Text: word}
@@ -71,18 +73,18 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 	if emote, ok := p.EmoteCache[word]; ok {
 		tok.Type = TokenTypeEmote
 		tok.Emote = emote
-		return yield(tok)
+		return yield(tok), ""
 	}
 
 	// Base Case: Depth limit
 	if depth == 2 {
-		return yield(tok)
+		return true, word
 	}
 
 	prefix, postfix, sepFound := strings.Cut(word, TextEffectSep)
 
 	if !sepFound || prefix == "" {
-		return yield(tok)
+		return true, word
 	}
 
 	if _, ok := TextColours[prefix]; ok {
@@ -96,11 +98,11 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 		tok.Type = TokenTypePattern
 		tok.Text = prefix[7:]
 	} else {
-		return yield(tok)
+		return true, word
 	}
 
 	if !yield(tok) {
-		return false
+		return false, ""
 	}
 
 	// Recursively tokenize next effect
@@ -110,34 +112,59 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 // Returns an iterator over the string which yields tokens.
 func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 	return func(yield func(Token) bool) {
+		var sb strings.Builder
 		scanner := bufio.NewScanner(strings.NewReader(s))
 		scanner.Split(bufio.ScanWords)
 
-		// Check first word for color or effects
 		ok := scanner.Scan()
 		if !ok {
 			return
 		}
+
 		word := scanner.Text()
 
 		// Recursively tokenize text effects
-		if !p.iterWordEffect(yield, word, 0) {
+		cont, lastWord := p.iterWordEffect(yield, word, 0)
+		if !cont {
 			return
 		}
+		sb.WriteString(lastWord)
+		sb.WriteByte(' ')
+
+		tok := Token{Type: TokenTypeText}
 
 		// Scan the rest of the message for emotes
 		for scanner.Scan() {
 			word := scanner.Text()
 
-			// Assume word is text
-			tok := Token{Type: TokenTypeText, Text: word}
-
 			// Check for emote
 			if emote, ok := p.EmoteCache[word]; ok {
+				// yield text before emote
+				tok.Text = strings.TrimSpace(sb.String())
+				if tok.Text != "" {
+					if !yield(tok) {
+						return
+					}
+				}
 				tok.Type = TokenTypeEmote
+				tok.Text = word
 				tok.Emote = emote
+				if !yield(tok) {
+					return
+				}
+				sb.Reset()
+			} else {
+				tok.Type = TokenTypeText
+				tok.Emote = nil
+				sb.WriteString(word)
+				sb.WriteByte(' ')
 			}
+		}
 
+		tok.Text = strings.TrimSpace(sb.String())
+
+		// yield remaining text at end of message scan
+		if tok.Text != "" {
 			if !yield(tok) {
 				return
 			}

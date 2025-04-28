@@ -126,7 +126,7 @@ func TestTokenizer(t *testing.T) {
 			tokens = append(tokens, tok)
 		}
 		if !reflect.DeepEqual(tokens, test.Expected) {
-			t.Logf("Test [%d] FAILED:\n\nExpected: %v\nGot:      %v\n\n", count, test.Expected, tokens)
+			t.Logf("Test [%d] FAILED:\n\nMessage:  <%s>\nExpected: %v\nGot:      %v\n\n", count, test.Message, test.Expected, tokens)
 			t.Fail()
 		}
 	}
