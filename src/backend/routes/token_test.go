@@ -34,7 +34,7 @@ func TestTokenizer(t *testing.T) {
 		Message  string
 		Expected []Token
 	}{
-		{// Gibberish with whitespace
+		{ // Gibberish with whitespace
 			Message: "  2[qrp]3-4t[ #(YT$ jd  ",
 			Expected: []Token{
 				{TokenTypeText, "2[qrp]3-4t[", nil},
@@ -42,7 +42,7 @@ func TestTokenizer(t *testing.T) {
 				{TokenTypeText, "jd", nil},
 			},
 		},
-		{// Emotes
+		{ // Emotes
 			Message: "KEKW KEKW FeelsGoodMan !!!",
 			Expected: []Token{
 				{TokenTypeEmote, "KEKW", tokenizer.EmoteCache["KEKW"]},
@@ -79,12 +79,38 @@ func TestTokenizer(t *testing.T) {
 				{TokenTypeEmote, "KEKW", tokenizer.EmoteCache["KEKW"]},
 			},
 		},
-		{ // effect:colour:emote
+		{ // effect:color:emote
 			Message: "wave2:rainbow:KEKW",
 			Expected: []Token{
 				{TokenTypeEffect, "wave2", nil},
 				{TokenTypeColour, "rainbow", nil},
 				{TokenTypeEmote, "KEKW", tokenizer.EmoteCache["KEKW"]},
+			},
+		},
+		{ // effect:Emote:Emote
+			Message: "wave2:KEKW:KEKW",
+			Expected: []Token{
+				{TokenTypeEffect, "wave2", nil},
+				{TokenTypeText, "KEKW:KEKW", nil},
+			},
+		},
+		{ // leading sep
+			Message: ":cyan:text",
+			Expected: []Token{
+				{TokenTypeText, ":cyan:text", nil},
+			},
+		},
+		{ // MANY SEP
+			Message: ":::::::::",
+			Expected: []Token{
+				{TokenTypeText, ":::::::::", nil},
+			},
+		},
+		{ // effect:MANY SEP
+			Message: "wave2:::::::::",
+			Expected: []Token{
+				{TokenTypeEffect, "wave2", nil},
+				{TokenTypeText, "::::::::", nil},
 			},
 		},
 	}
