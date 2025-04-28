@@ -34,12 +34,10 @@ func TestTokenizer(t *testing.T) {
 		Message  string
 		Expected []Token
 	}{
-		{ // Gibberish with whitespace
+		{ // Gibberish with leading whitespace
 			Message: "  2[qrp]3-4t[ #(YT$ jd  ",
 			Expected: []Token{
-				{TokenTypeText, "2[qrp]3-4t[", nil},
-				{TokenTypeText, "#(YT$", nil},
-				{TokenTypeText, "jd", nil},
+				{TokenTypeText, "2[qrp]3-4t[ #(YT$ jd", nil},
 			},
 		},
 		{ // Emotes
@@ -111,6 +109,13 @@ func TestTokenizer(t *testing.T) {
 			Expected: []Token{
 				{TokenTypeEffect, "wave2", nil},
 				{TokenTypeText, "::::::::", nil},
+			},
+		},
+		{ // pattern
+			Message: "patternq3q3q3q3:I am a bumblebee!!!",
+			Expected: []Token{
+				{TokenTypePattern, "q3q3q3q3", nil},
+				{TokenTypeText, "I am a bumblebee!!!", nil},
 			},
 		},
 	}

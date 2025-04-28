@@ -7,10 +7,11 @@ import (
 )
 
 const (
-	TokenTypeText   = "text"
-	TokenTypeEmote  = "emote"
-	TokenTypeColour = "colour"
-	TokenTypeEffect = "effect"
+	TokenTypeText    = "text"
+	TokenTypeEmote   = "emote"
+	TokenTypeColour  = "colour"
+	TokenTypeEffect  = "effect"
+	TokenTypePattern = "pattern"
 )
 
 const TextEffectSep = ":"
@@ -37,7 +38,6 @@ var TextColours = map[string]struct{}{
 	"glow2":   {},
 	"glow3":   {},
 	"rainbow": {},
-	"pattern": {},
 }
 
 type Token struct {
@@ -90,14 +90,19 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 
 	if _, ok := TextColours[prefix]; ok {
 		tok.Type = TokenTypeColour
+		tok.Text = prefix
 	} else if _, ok := TextEffects[prefix]; ok {
 		tok.Type = TokenTypeEffect
+		tok.Text = prefix
+	} else if 7 <= len(prefix) && len(prefix) <= 15 && prefix[:7] == "pattern" {
+		// Note: Len("pattern") = 7 and pattern opcode max length is 8.
+		tok.Type = TokenTypePattern
+		tok.Text = prefix[7:]
 	} else {
 		yield(tok)
 		return
 	}
 
-	tok.Text = prefix
 	yield(tok)
 
 	// Recursively tokenize next effect
