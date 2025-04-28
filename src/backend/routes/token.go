@@ -16,6 +16,8 @@ const (
 
 const TextEffectSep = ":"
 
+const TokenRuneLimit = 512
+
 var TextEffects = map[string]struct{}{
 	"wave":   {},
 	"wave2":  {},
@@ -59,12 +61,12 @@ type Tokenizer struct {
 //	color:effect:text
 //	effect:colour:text
 //
-// Returns: (yield result, last word)
+// Returns: (yield stop, last word (text only))
 func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int) (bool, string) {
 
 	// Base Case: Empty string
-	if word == "" {
-		return true, ""
+	if word == "" || word == ":" {
+		return false, ""
 	}
 
 	tok := Token{Type: TokenTypeText, Text: word}
@@ -73,18 +75,18 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 	if emote, ok := p.EmoteCache[word]; ok {
 		tok.Type = TokenTypeEmote
 		tok.Emote = emote
-		return yield(tok), ""
+		return !yield(tok), ""
 	}
 
 	// Base Case: Depth limit
 	if depth == 2 {
-		return true, word
+		return false, word
 	}
 
 	prefix, postfix, sepFound := strings.Cut(word, TextEffectSep)
 
 	if !sepFound || prefix == "" {
-		return true, word
+		return false, word
 	}
 
 	if _, ok := TextColours[prefix]; ok {
@@ -94,15 +96,18 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 		tok.Type = TokenTypeEffect
 		tok.Text = prefix
 	} else if 7 <= len(prefix) && len(prefix) <= 15 && prefix[:7] == "pattern" {
-		// Note: Len("pattern") = 7 and pattern opcode max length is 8.
+		// Note: Len("pattern...ops") >= 8 and pattern opcode max length is 8.
+		if len(prefix) == 7 {
+			return false, word[8:]
+		}
 		tok.Type = TokenTypePattern
 		tok.Text = prefix[7:]
 	} else {
-		return true, word
+		return false, word
 	}
 
 	if !yield(tok) {
-		return false, ""
+		return true, ""
 	}
 
 	// Recursively tokenize next effect
@@ -124,8 +129,8 @@ func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 		word := scanner.Text()
 
 		// Recursively tokenize text effects
-		cont, lastWord := p.iterWordEffect(yield, word, 0)
-		if !cont {
+		stop, lastWord := p.iterWordEffect(yield, word, 0)
+		if stop {
 			return
 		}
 		sb.WriteString(lastWord)

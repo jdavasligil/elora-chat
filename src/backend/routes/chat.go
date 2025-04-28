@@ -80,7 +80,7 @@ type Message struct {
 	Colour  string  `json:"colour"`
 }
 
-func init() {
+func InitRoutes() {
 	// Initialize the Redis client without TLS.
 	redisClient = redis.NewClient(&redis.Options{
 		Addr:            os.Getenv("REDIS_ADDR"),

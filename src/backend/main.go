@@ -34,6 +34,8 @@ func main() {
 		port = "8080" // Default to port 8080 if not specified
 	}
 
+	routes.InitRoutes()
+
 	r := mux.NewRouter()
 
 	// Register the dynamic config serving route
