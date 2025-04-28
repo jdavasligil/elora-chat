@@ -58,11 +58,11 @@ type Tokenizer struct {
 //	effect:text
 //	color:effect:text
 //	effect:colour:text
-func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int) {
+func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int) bool {
 
 	// Base Case: Empty string
 	if word == "" {
-		return
+		return true
 	}
 
 	tok := Token{Type: TokenTypeText, Text: word}
@@ -71,21 +71,18 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 	if emote, ok := p.EmoteCache[word]; ok {
 		tok.Type = TokenTypeEmote
 		tok.Emote = emote
-		yield(tok)
-		return
+		return yield(tok)
 	}
 
 	// Base Case: Depth limit
 	if depth == 2 {
-		yield(tok)
-		return
+		return yield(tok)
 	}
 
 	prefix, postfix, sepFound := strings.Cut(word, TextEffectSep)
 
 	if !sepFound || prefix == "" {
-		yield(tok)
-		return
+		return yield(tok)
 	}
 
 	if _, ok := TextColours[prefix]; ok {
@@ -99,14 +96,15 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 		tok.Type = TokenTypePattern
 		tok.Text = prefix[7:]
 	} else {
-		yield(tok)
-		return
+		return yield(tok)
 	}
 
-	yield(tok)
+	if !yield(tok) {
+		return false
+	}
 
 	// Recursively tokenize next effect
-	p.iterWordEffect(yield, postfix, depth+1)
+	return p.iterWordEffect(yield, postfix, depth+1)
 }
 
 // Returns an iterator over the string which yields tokens.
@@ -123,7 +121,9 @@ func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 		word := scanner.Text()
 
 		// Recursively tokenize text effects
-		p.iterWordEffect(yield, word, 0)
+		if !p.iterWordEffect(yield, word, 0) {
+			return
+		}
 
 		// Scan the rest of the message for emotes
 		for scanner.Scan() {
