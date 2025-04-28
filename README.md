@@ -47,3 +47,12 @@ elora-chat is easy to use. Simply start the server and connect your streaming pl
 If you have ideas for improvement or want to contribute to elora-chat, feel free to create a pull request or contact Hayden for collaboration.
 
 Happy streaming! 🎮📹👾
+
+## License
+
+This project is licensed under the **Business Source License 1.1 (BUSL-1.1)**.  
+- Non-commercial use only without prior permission.
+- Commercial licensing available — [contact](mailto:hwp@arizona.edu) for inquiries.
+- On April 25, 2028, the license will convert to Apache 2.0 automatically.
+
+See [LICENSE](./LICENSE) and [COMMERCIAL_LICENSE.md](./COMMERCIAL_LICENSE.md) for more details.
