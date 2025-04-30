@@ -4,6 +4,8 @@ import sys
 
 
 def fetch_chat(url, message_groups=None):
+    # Track which messages have been seen before
+    seen = {}
     try:
         chat_downloader = ChatDownloader()
         while True:
@@ -15,6 +17,12 @@ def fetch_chat(url, message_groups=None):
             )
             assert chat is not None, "chat is None"
             for message in chat:
+                id = message["message_id"]
+                if seen.get(id, False):
+                    continue
+                else:
+                    seen[id] = True
+
                 # Initialize default color (grey for YouTube non-members)
                 color = "#808080"
 
