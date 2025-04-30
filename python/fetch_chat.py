@@ -1,11 +1,23 @@
 from chat_downloader import ChatDownloader
 import json
 import sys
+import datetime
+
+
+def delete_older_than(seconds: float, dic: dict[str, float]):
+    cutoff = datetime.datetime.now().timestamp() - seconds
+    old_ids = []
+    for (id, t) in dic.items():
+        if t < cutoff:
+            old_ids.append(id)
+
+    for id in old_ids:
+        del dic[id]
 
 
 def fetch_chat(url, message_groups=None):
-    # Track which messages have been seen before
-    seen = {}
+    # Track which messages have been seen before and when
+    seen: dict[str, float] = {}
     try:
         chat_downloader = ChatDownloader()
         while True:
@@ -21,7 +33,7 @@ def fetch_chat(url, message_groups=None):
                 if seen.get(id, False):
                     continue
                 else:
-                    seen[id] = True
+                    seen[id] = datetime.datetime.now().timestamp()
 
                 # Initialize default color (grey for YouTube non-members)
                 color = "#808080"
@@ -48,9 +60,14 @@ def fetch_chat(url, message_groups=None):
                     "badges": message["author"].get("badges", []),
                     "colour": color,  # Add the color here
                 }
-                print(json.dumps(message_data), flush=True)  # Print messages as JSON
+
+                print(json.dumps(message_data), flush=True)
+
+            # Prevent seen dict from growing indefinitely
+            delete_older_than(3600, seen)
+
     except Exception as e:
-        print(f"Error fetching chat: {e}", file=sys.stderr)
+        print(f"fetch_chat: Error fetching chat: {e}", file=sys.stderr)
         return
 
 
