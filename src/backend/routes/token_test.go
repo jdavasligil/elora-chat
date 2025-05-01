@@ -151,6 +151,7 @@ func TestTokenizer(t *testing.T) {
 			Name:    "semicolonEmpty",
 			Message: ":   ",
 			Expected: []Token{
+				{TokenTypeText, ":", nil},
 			},
 		},
 		{

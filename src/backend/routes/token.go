@@ -63,7 +63,7 @@ type Tokenizer struct {
 func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int) (bool, string) {
 
 	// Base Case: Empty string
-	if word == "" || word == ":" {
+	if word == "" {
 		return false, ""
 	}
 
