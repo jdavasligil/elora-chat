@@ -175,6 +175,13 @@ func TestTokenizer(t *testing.T) {
 				{TokenTypeText, "I am a bumblebee!!!", nil},
 			},
 		},
+		{
+			Name:    "patternOverMax",
+			Message: "patternq3q3q3q3q:I am a bumblebee!!!",
+			Expected: []Token{
+				{TokenTypeText, "patternq3q3q3q3q:I am a bumblebee!!!", nil},
+			},
+		},
 	}
 	iterTests := []Test{
 		{
