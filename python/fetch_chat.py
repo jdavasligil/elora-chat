@@ -1,23 +1,20 @@
 from chat_downloader import ChatDownloader
 import json
 import sys
-import datetime
 
+# Constant must be a power of 2
+MESSAGE_BUF_MAX = 128
 
-def delete_older_than(seconds: float, dic: dict[str, float]):
-    cutoff = datetime.datetime.now().timestamp() - seconds
-    old_ids = []
-    for (id, t) in dic.items():
-        if t < cutoff:
-            old_ids.append(id)
-
-    for id in old_ids:
-        del dic[id]
+# Performs mod 2 using a bit mask (& operation)
+MESSAGE_MOD_MASK = MESSAGE_BUF_MAX - 1
 
 
 def fetch_chat(url, message_groups=None):
-    # Track which messages have been seen before and when
-    seen: dict[str, float] = {}
+    # Track which unique messages have been  before
+    message_id_set = set()
+    # Keep  messages in a circle buffer to continuously delete old messages
+    message_id_buf = [0]*MESSAGE_BUF_MAX
+    message_id_idx = 0
     try:
         chat_downloader = ChatDownloader()
         while True:
@@ -30,10 +27,17 @@ def fetch_chat(url, message_groups=None):
             assert chat is not None, "chat is None"
             for message in chat:
                 id = message["message_id"]
-                if seen.get(id, False):
+                if id in message_id_set:
                     continue
                 else:
-                    seen[id] = datetime.datetime.now().timestamp()
+                    # Store the unique id
+                    message_id_set.add(id)
+                    message_id_buf[message_id_idx] = id
+                    # Move to the next oldest id in the circle buffer
+                    message_id_idx = (message_id_idx + 1) & MESSAGE_MOD_MASK
+                    old_id = message_id_buf[message_id_idx]
+                    # Discard the oldest id since we only need the last 100
+                    message_id_set.discard(old_id)
 
                 # Initialize default color (grey for YouTube non-members)
                 color = "#808080"
@@ -62,9 +66,6 @@ def fetch_chat(url, message_groups=None):
                 }
 
                 print(json.dumps(message_data), flush=True)
-
-            # Prevent seen dict from growing indefinitely
-            delete_older_than(3600, seen)
 
     except Exception as e:
         print(f"fetch_chat: Error fetching chat: {e}", file=sys.stderr)
