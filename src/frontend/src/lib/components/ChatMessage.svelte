@@ -1,4 +1,51 @@
+<script lang="ts">
+  import type { Message } from '$lib/types/messages';
+
+  let { message }: { message: Message } = $props();
+
+  console.log(message);
+</script>
+
+<div class="chat-message">
+  {#each message.badges as badge}
+    {#if badge.icons && badge.icons.length > 0}
+      <img class="badge-icon" src={badge.icons[badge.icons.length - 1].url} />
+    {/if}
+  {/each}
+
+  <span class="message-username" style="color: {message.colour}">
+    {message.author}:&nbsp;
+  </span>
+
+  <span class="message-text">
+    {message.message}
+  </span>
+</div>
+
 <style lang="scss">
+  .chat-message {
+    display: inline-flex;
+
+    margin: 4px 0;
+    opacity: 0;
+    word-wrap: break-word;
+
+    animation: glideInBounce 0.5s forwards;
+  }
+
+  .badge-icon {
+    width: 18px;
+    height: 18px;
+
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+
+  .message-username {
+    font-weight: bold;
+  }
+
+  /* Message effects */
   .text-bold {
     font-weight: bold;
   }
