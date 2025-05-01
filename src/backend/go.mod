@@ -12,6 +12,7 @@ require (
 require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/jdavasligil/golang-dsa v0.0.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -18,12 +20,13 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/jdavasligil/emodl"
+	"github.com/jdavasligil/golang-dsa/bucket"
 )
 
 // Initialize a Redis client as a global variable.
 var redisClient *redis.Client
 var ctx = context.Background()
-var chatFetchCmds = make(map[string]*exec.Cmd)
+var chatFetchCmds sync.Map // string -> *exec.Cmd
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -133,7 +136,7 @@ func StartChatFetch(urls []string) {
 func monitorAndRestartChatFetch(url, pythonExecPath, fetchChatScript string) {
 	for {
 		cmd := startChatFetch(url, pythonExecPath, fetchChatScript)
-		chatFetchCmds[url] = cmd
+		chatFetchCmds.Store(url, cmd)
 
 		err := cmd.Wait() // Waits for the command to exit
 		if err != nil {
@@ -225,7 +228,20 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 
 	// Channel to signal closure of WebSocket connection
 	done := make(chan struct{})
-	messageChan := make(chan []byte, 8)
+	messageChan := make(chan []byte)
+	leakyBucket, err := bucket.NewBucket[[]byte](&bucket.BucketOptions{
+		Capacity:        64,
+		LowLatency:      false,
+		DropBias:        0.90,
+		DropInterval:    333 * time.Millisecond,
+		MinDropInterval: 50 * time.Millisecond,
+		MaxDropInterval: time.Second,
+		MaxWaitTime:     5 * time.Second,
+		UpdateInterval:  12 * time.Second,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	lastID := "0" // Start from the beginning of the stream
 
@@ -265,9 +281,33 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 				for _, message := range stream.Messages {
 					// Before sending a message to the client
 					// log.Printf("Sending message to client: %s\n", message)
-					messageChan <- []byte(message.Values["message"].(string))
+					leakyBucket.AddDrop([]byte(message.Values["message"].(string)))
 					lastID = message.ID // Update last ID to the newest message
 				}
+			}
+		}
+	}()
+
+	// Bucket transfer
+	go func() {
+		dropCount := 0
+		for {
+			drop, err := leakyBucket.AwaitDrop()
+			if errors.Is(err, &bucket.BucketClosedError{}) {
+				log.Println("Bucket has closed. Shutting down")
+				dropsRemaining := leakyBucket.Drain()
+				log.Printf("Drops Remaining: %v\n", dropsRemaining)
+				close(done)
+				return
+			} else if err != nil {
+				log.Println(err)
+			} else {
+				messageChan<-drop
+			}
+			dropCount++
+
+			if dropCount % 16 == 0 {
+				log.Println(leakyBucket.Status())
 			}
 		}
 	}()
@@ -336,14 +376,20 @@ func ImageProxy(w http.ResponseWriter, r *http.Request) {
 
 // StopChatFetches stops all ongoing chat fetch commands
 func StopChatFetches(w http.ResponseWriter, r *http.Request) {
-	for _, cmd := range chatFetchCmds {
+	chatFetchCmds.Range(func(key, value any) bool {
+		cmd, ok := value.(*exec.Cmd)
+		if !ok {
+			log.Println("Failed to coerce chatFetchCmds value to exec.Cmd")
+			return true
+		}
 		if cmd != nil && cmd.Process != nil {
 			err := cmd.Process.Kill()
 			if err != nil {
 				log.Printf("Failed to stop chat fetch command: %v", err)
 			}
 		}
-	}
+		return true
+	})
 	fmt.Fprintln(w, "Chat fetch commands stopped. Restarting...")
 }
 

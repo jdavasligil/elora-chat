@@ -19,6 +19,12 @@ github.com/gorilla/websocket v1.5.1 h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/
 github.com/gorilla/websocket v1.5.1/go.mod h1:x3kM2JMyaluk02fnUJpQuwD2dCS5NDG2ZHL0uE0tcaY=
 github.com/jdavasligil/emodl v0.2.0 h1:DwCe6prp1lSOGSmuClWAgwiGlY6WP2G40vg527ehTOI=
 github.com/jdavasligil/emodl v0.2.0/go.mod h1:5LbE1kexF7Rq+UjKItwpmTSew2uoUIFIiybg5vEWa+E=
+github.com/jdavasligil/golang-dsa v0.0.0-20250501063242-7b3640298506 h1:0/YTaJ+a6Osj2V7OlXoPW0eGglxOaD3tPy+7s+wyXo0=
+github.com/jdavasligil/golang-dsa v0.0.0-20250501063242-7b3640298506/go.mod h1:MnNtzDUMa0PBrOpbv2Hl9pPR5wo7lOA6aVmKTei8cvw=
+github.com/jdavasligil/golang-dsa v0.0.0-20250501064128-5500eb2f8f04 h1:9cMY9HET+0uB7u3Ac20OnohMIEJNZI9HZrIeN0hTzMY=
+github.com/jdavasligil/golang-dsa v0.0.0-20250501064128-5500eb2f8f04/go.mod h1:MnNtzDUMa0PBrOpbv2Hl9pPR5wo7lOA6aVmKTei8cvw=
+github.com/jdavasligil/golang-dsa v0.0.1 h1:mGqNGusW5NFMlfTzcu+ttwdoK0/I/8oRzhgTIFRZlxw=
+github.com/jdavasligil/golang-dsa v0.0.1/go.mod h1:MnNtzDUMa0PBrOpbv2Hl9pPR5wo7lOA6aVmKTei8cvw=
 github.com/josharian/intern v1.0.0 h1:vlS4z54oSdjm0bgjRigI+G1HpF+tI+9rE5LLzOg8HmY=
 github.com/josharian/intern v1.0.0/go.mod h1:5DoeVV0s6jJacbCEi61lwdGj/aVlrQvzHFFd8Hwg//Y=
 github.com/mailru/easyjson v0.9.0 h1:PrnmzHw7262yW8sTBwxi1PdJA3Iw/EKBa8psRf7d9a4=

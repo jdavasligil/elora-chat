@@ -56,7 +56,7 @@ func main() {
 		// "https://www.youtube.com/watch?v=_oMKOh8skrM", // viewer link
 		// "https://youtube.com/live/7NA555IYE24?feature=share",
 		// "https://youtube.com/live/7455sVTXUPU?feature=share",
-		// "https://www.youtube.com/watch?v=jfKfPfyJRdk", // lofi girl live
+		"https://www.youtube.com/watch?v=jfKfPfyJRdk", // lofi girl live
 		// "http://youtube.com/channel/UCSJ4gkVC6NrvII8umztf0Ow/live",
 		// "https://www.twitch.tv/rifftrax",
 		// "https://www.youtube.com/watch?v=39VeO9p7Vn0", // dayo live test stream
@@ -68,8 +68,9 @@ func main() {
 		// "https://www.twitch.tv/jakenbakeLIVE",
 		// "https://www.twitch.tv/Knut",
 		// "https://www.youtube.com/@dayoman/live",
-		"http://youtube.com/channel/UC2c4NxvHnbXs3NLpCm641ew/live",
-		"https://www.twitch.tv/dayoman",
+		//"http://youtube.com/channel/UC2c4NxvHnbXs3NLpCm641ew/live",
+		// "https://www.twitch.tv/dayoman",
+		"https://www.twitch.tv/summit1g",
 		// "https://www.youtube.com/watch?v=4xDzrJKXOOY",
 		// "https://www.twitch.tv/forsen", // basically a hard code for constant chats
 		// "https://www.twitch.tv/jynxzi", // basically a hard code for constant chats
