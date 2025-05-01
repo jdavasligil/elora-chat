@@ -2,6 +2,10 @@
   import { Chat, Header, SendMessage } from '$lib/components';
 </script>
 
+<svelte:head>
+  <title>Chat Display</title>
+</svelte:head>
+
 <Header />
 <Chat />
 <SendMessage />
