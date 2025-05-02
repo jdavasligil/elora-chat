@@ -24,7 +24,22 @@ import (
 // Initialize a Redis client as a global variable.
 var redisClient *redis.Client
 var ctx = context.Background()
-var chatFetchCmds sync.Map // [string]*exec.Cmd
+
+type CmdMap struct {
+	data sync.Map
+}
+
+func (m *CmdMap) Store(key string, cmd *exec.Cmd) {
+	m.data.Store(key, cmd)
+}
+
+func (m *CmdMap) Range(f func(key string, cmd *exec.Cmd) bool) {
+	m.data.Range(func(key, value any) bool {
+		return f(key.(string), value.(*exec.Cmd))
+	})
+}
+
+var chatFetchCmds CmdMap
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -337,12 +352,7 @@ func ImageProxy(w http.ResponseWriter, r *http.Request) {
 
 // StopChatFetches stops all ongoing chat fetch commands
 func StopChatFetches(w http.ResponseWriter, r *http.Request) {
-	chatFetchCmds.Range(func(key, value any) bool {
-		cmd, ok := value.(*exec.Cmd)
-		if !ok {
-			log.Printf("Failed to coerce chatFetchCmd to type *exec.Cmd")
-			return true
-		}
+	chatFetchCmds.Range(func(key string, cmd *exec.Cmd) bool {
 		if cmd != nil && cmd.Process != nil {
 			err := cmd.Process.Kill()
 			if err != nil {
