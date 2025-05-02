@@ -82,7 +82,7 @@ func init() {
 	// Check the Redis connection
 	_, err := redisClient.Ping(ctx).Result()
 	if err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
+		log.Fatalf("redis: Failed to connect to Redis: %v", err)
 	}
 
 	// Load third party emotes
@@ -103,7 +103,7 @@ func init() {
 	})
 	emoteCacheTmp, err := downloader.Load()
 	if err != nil {
-		log.Printf("Failed to load third party emotes: %v", err)
+		log.Printf("emodl: Failed to load third party emotes: %v", err)
 	}
 	emoteCache = make(map[string]Emote, len(emoteCacheTmp))
 	for name, emote := range emoteCacheTmp {
@@ -137,11 +137,11 @@ func monitorAndRestartChatFetch(url, pythonExecPath, fetchChatScript string) {
 
 		err := cmd.Wait() // Waits for the command to exit
 		if err != nil {
-			log.Printf("Chat fetch for %s stopped: %v", url, err)
+			log.Printf("chat: Chat fetch for %s stopped: %v", url, err)
 		}
 
 		// Wait for a short duration before restarting to prevent rapid restart loops
-		log.Println("Restarting chat fetch...")
+		log.Println("chat: Restarting chat fetch...")
 		time.Sleep(1 * time.Second)
 	}
 }
@@ -151,14 +151,14 @@ func startChatFetch(url, pythonExecPath, fetchChatScript string) *exec.Cmd {
 	cmd.Stderr = os.Stderr
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Fatal("Failed to create stdout pipe:", err)
+		log.Fatal("chat: Failed to create stdout pipe:", err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		log.Fatal("Failed to start command:", err)
+		log.Fatal("chat: Failed to start command:", err)
 	}
 
-	log.Println("Fetching chat from URL: ", url)
+	log.Println("chat: Fetching chat from URL: ", url)
 
 	go processChatOutput(stdout, url)
 	return cmd
@@ -170,7 +170,7 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 		var msg Message
 		rawMessage := scanner.Bytes()
 		if err := json.Unmarshal(rawMessage, &msg); err != nil {
-			log.Printf("Failed to unmarshal message: %v, Raw message: %s\n", err, string(rawMessage))
+			log.Printf("chat: Failed to unmarshal message: %v, Raw message: %s\n", err, string(rawMessage))
 			continue
 		}
 		if strings.Contains(url, "twitch.tv") {
@@ -194,7 +194,7 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 		// Re-marshal the message with the Source set.
 		modifiedMessage, err := json.Marshal(msg)
 		if err != nil {
-			log.Printf("Failed to marshal message: %v, Message: %#v\n", err, msg)
+			log.Printf("chat: Failed to marshal message: %v, Message: %#v\n", err, msg)
 			continue
 		}
 
@@ -206,11 +206,11 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 			Approx: true,
 		}).Result()
 		if err != nil {
-			log.Printf("Failed to add message to stream: %v, Modified message: %s\n", err, string(modifiedMessage))
+			log.Printf("redis: Failed to add message to stream: %v, Modified message: %s\n", err, string(modifiedMessage))
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Println("Error reading standard output:", err)
+		log.Println("chat: Error reading standard output:", err)
 	}
 }
 
@@ -218,7 +218,7 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 func StreamChat(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Print("WebSocket upgrade error:", err)
+		log.Print("ws: WebSocket upgrade error:", err)
 		return
 	}
 	defer conn.Close()
@@ -232,7 +232,7 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 	// Read the last 100 messages from the stream to send to the client immediately.
 	streams, err := redisClient.XRevRangeN(ctx, "chatMessages", "+", "-", 100).Result()
 	if err != nil {
-		log.Printf("Failed to read messages from stream: %v\n", err)
+		log.Printf("redis: Failed to read messages from stream: %v\n", err)
 		return
 	}
 
@@ -240,7 +240,7 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 	for i := len(streams) - 1; i >= 0; i-- {
 		message := streams[i]
 		if err := conn.WriteMessage(websocket.TextMessage, []byte(message.Values["message"].(string))); err != nil {
-			log.Println("WebSocket write error:", err)
+			log.Println("ws: WebSocket write error:", err)
 			return
 		}
 		if message.ID > lastID {
@@ -257,7 +257,7 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 			}).Result()
 
 			if err != nil {
-				log.Println("Error reading from stream:", err)
+				log.Println("redis: Error reading from stream:", err)
 				return
 			}
 
@@ -282,12 +282,12 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 			select {
 			case m := <-messageChan:
 				if err := conn.WriteMessage(websocket.TextMessage, m); err != nil {
-					log.Println("WebSocket write error:", err)
+					log.Println("ws: WebSocket write error:", err)
 					return
 				}
 			case <-ticker.C:
 				if err := conn.WriteMessage(websocket.TextMessage, []byte("__keepalive__")); err != nil {
-					log.Println("Failed to send keep-alive message:", err)
+					log.Println("ws: Failed to send keep-alive message:", err)
 					return
 				}
 			case <-done:
@@ -300,7 +300,7 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 	for {
 		if _, _, err := conn.ReadMessage(); err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
-				log.Println("WebSocket read error, closing connection:", err)
+				log.Println("ws: WebSocket read error, closing connection:", err)
 			}
 			close(done)
 			break
@@ -318,7 +318,7 @@ func ImageProxy(w http.ResponseWriter, r *http.Request) {
 	resp, err := http.Get(imageURL)
 	if err != nil || resp.StatusCode == 404 {
 		// Log error and serve a default placeholder image
-		log.Printf("Error fetching image or not found: %s", imageURL)
+		log.Printf("http: Error fetching image or not found: %s", imageURL)
 		http.ServeFile(w, r, "../public/refresh.png")
 		return
 	}
@@ -340,7 +340,7 @@ func StopChatFetches(w http.ResponseWriter, r *http.Request) {
 		if cmd != nil && cmd.Process != nil {
 			err := cmd.Process.Kill()
 			if err != nil {
-				log.Printf("Failed to stop chat fetch command: %v", err)
+				log.Printf("http: Failed to stop chat fetch command: %v", err)
 			}
 		}
 	}
