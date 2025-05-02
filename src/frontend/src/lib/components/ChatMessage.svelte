@@ -9,14 +9,23 @@
 
 <div class="chat-message">
   {#if message.source === 'Twitch'}
-    <TwitchIcon class="badge-icon" width={18} height={18} />
+    <span title="Twitch">
+      <TwitchIcon class="badge-icon" alt="Twitch user" width={18} height={18} />
+    </span>
   {:else if message.source === 'YouTube'}
-    <YoutubeIcon class="badge-icon" width={18} height={18} />
+    <span title="YouTube">
+      <YoutubeIcon class="badge-icon" alt="YouTube user" width={18} height={18} />
+    </span>
   {/if}
 
   {#each message.badges as badge}
     {#if badge.icons && badge.icons.length > 0}
-      <img class="badge-icon" src={badge.icons[badge.icons.length - 1].url} />
+      <img
+        class="badge-icon"
+        src={badge.icons[badge.icons.length - 1].url}
+        title={badge.title}
+        alt={badge.title}
+      />
     {/if}
   {/each}
 
