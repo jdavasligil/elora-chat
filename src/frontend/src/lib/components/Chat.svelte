@@ -3,8 +3,7 @@
   import { onMount } from 'svelte';
   import ChatMessage from './ChatMessage.svelte';
 
-  let deployedUrl = 'https://elorachat.wizg.xyz';
-  const useDeployedApi = true; // Be sure to set this to true when building/deploying
+  import { deployedUrl, useDeployedApi } from '$lib/config';
 
   let ws: WebSocket | null = null;
   const messageQueue: Message[] = [];
@@ -26,6 +25,13 @@
 
     processing = true;
     const message = messageQueue.shift()!;
+
+    // Replace black usernames with higher contrast color to show up on black background
+    if (message.colour === '#000000') {
+      message.colour = '#CCCCCC'; // Light grey for visibility
+    }
+
+    // Add the message to the messages array
     messages = [...messages, message];
 
     // Continue processing after a delay

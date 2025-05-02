@@ -13,7 +13,7 @@ interface Badge {
   clickURL: string;
 }
 
-interface Emote {
+export interface Emote {
   id: string;
   name: string;
   images: Image[];

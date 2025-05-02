@@ -1,52 +1,67 @@
 <script lang="ts">
   import type { Message } from '$lib/types/messages';
+  import { addMessageEffects, replaceEmotes, sanitizeMessage } from '$lib/utils';
   import { TwitchIcon, YoutubeIcon } from './icons';
 
   let { message }: { message: Message } = $props();
-
   console.log(message);
+
+  function formatMessage(): { messageWithHTML: string; effects: string } {
+    let messageWithEmotes = sanitizeMessage(message.message);
+    const { messageText, effects } = addMessageEffects(messageWithEmotes);
+    messageWithEmotes = messageText;
+
+    return { messageWithHTML: replaceEmotes(messageWithEmotes, message.emotes), effects };
+  }
+
+  const { messageWithHTML, effects } = formatMessage();
 </script>
 
 <div class="chat-message">
-  {#if message.source === 'Twitch'}
-    <span title="Twitch">
-      <TwitchIcon class="badge-icon" alt="Twitch user" width={18} height={18} />
-    </span>
-  {:else if message.source === 'YouTube'}
-    <span title="YouTube">
-      <YoutubeIcon class="badge-icon" alt="YouTube user" width={18} height={18} />
-    </span>
-  {/if}
-
-  {#each message.badges as badge}
-    {#if badge.icons && badge.icons.length > 0}
-      <img
-        class="badge-icon"
-        src={badge.icons[badge.icons.length - 1].url}
-        title={badge.title}
-        alt={badge.title}
-      />
+  <span class="sender">
+    {#if message.source === 'Twitch'}
+      <span title="Twitch">
+        <TwitchIcon class="badge-icon" alt="Twitch user" width={18} height={18} />
+      </span>
+    {:else if message.source === 'YouTube'}
+      <span title="YouTube">
+        <YoutubeIcon class="badge-icon" alt="YouTube user" width={18} height={18} />
+      </span>
     {/if}
-  {/each}
 
-  <span class="message-username" style="color: {message.colour}">
-    {message.author}:&nbsp;
+    {#each message.badges as badge}
+      {#if badge.icons && badge.icons.length > 0}
+        <img
+          class="badge-icon"
+          src={badge.icons[badge.icons.length - 1].url}
+          title={badge.title}
+          alt={badge.title}
+        />
+      {/if}
+    {/each}
+
+    <span class="message-username" style="color: {message.colour}">
+      {message.author}:
+    </span>
   </span>
 
-  <span class="message-text">
-    {message.message}
+  <span class={['message-text', effects].filter(Boolean).join(' ')}>
+    {@html messageWithHTML}
   </span>
 </div>
 
 <style lang="scss">
   .chat-message {
-    display: inline-flex;
-
-    margin: 4px 0;
+    margin: 3px 0;
     opacity: 0;
     word-wrap: break-word;
 
     animation: glideInBounce 0.5s forwards;
+  }
+
+  .sender {
+    display: inline-flex;
+    align-items: center;
   }
 
   :global {
@@ -57,10 +72,24 @@
       margin-right: 5px;
       vertical-align: middle;
     }
+
+    .emote-image {
+      height: 28px;
+      width: 28px;
+
+      vertical-align: middle;
+    }
   }
 
   .message-username {
+    position: relative;
+    top: 1px;
+
     font-weight: bold;
+  }
+
+  .message-text {
+    vertical-align: middle;
   }
 
   /* Message effects */
