@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Message } from '$lib/types/messages';
+  import { TwitchIcon, YoutubeIcon } from './icons';
 
   let { message }: { message: Message } = $props();
 
@@ -7,6 +8,12 @@
 </script>
 
 <div class="chat-message">
+  {#if message.source === 'Twitch'}
+    <TwitchIcon class="badge-icon" width={18} height={18} />
+  {:else if message.source === 'YouTube'}
+    <YoutubeIcon class="badge-icon" width={18} height={18} />
+  {/if}
+
   {#each message.badges as badge}
     {#if badge.icons && badge.icons.length > 0}
       <img class="badge-icon" src={badge.icons[badge.icons.length - 1].url} />
@@ -33,12 +40,14 @@
     animation: glideInBounce 0.5s forwards;
   }
 
-  .badge-icon {
-    width: 18px;
-    height: 18px;
+  :global {
+    .badge-icon {
+      width: 18px;
+      height: 18px;
 
-    margin-right: 5px;
-    vertical-align: middle;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
   }
 
   .message-username {
