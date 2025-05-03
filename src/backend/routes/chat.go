@@ -200,7 +200,6 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 
 		// Add unknown emotes to the emote cache for tokenization
 		for _, e := range msg.Emotes {
-			log.Println(e.ID, " ", e.Name)
 			tokenizer.EmoteCache[e.Name] = &e
 			// Keep track of unique emotes to prevent duplicates
 			uniqueEmotes[e.Name] = struct{}{}
