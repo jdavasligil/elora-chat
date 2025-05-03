@@ -52,6 +52,7 @@ func main() {
 
 	// Start fetching chat messages
 	chatURLs := []string{
+		"https://www.youtube.com/watch?v=x1O2DPZZP84",
 		// "https://www.twitch.tv/hp_az",
 		// "https://www.youtube.com/channel/UCHToAogHtFnv2uksbDzKsYA/live", // my channel link
 		// "https://www.youtube.com/@hp_az/live", // crude live link
@@ -60,7 +61,7 @@ func main() {
 		// "https://youtube.com/live/7455sVTXUPU?feature=share",
 		// "https://www.youtube.com/watch?v=jfKfPfyJRdk", // lofi girl live
 		// "http://youtube.com/channel/UCSJ4gkVC6NrvII8umztf0Ow/live",
-		// "https://www.twitch.tv/rifftrax",
+		"https://www.twitch.tv/rifftrax",
 		// "https://www.youtube.com/watch?v=39VeO9p7Vn0", // dayo live test stream
 		// "https://www.youtube.com/live/6sjf7R0o-ss?si=WkdXIOu83_7Sglk2&t=7500", // ludwig live test stream
 		// "https://www.twitch.tv/Johnstone",
@@ -70,8 +71,8 @@ func main() {
 		// "https://www.twitch.tv/jakenbakeLIVE",
 		// "https://www.twitch.tv/Knut",
 		// "https://www.youtube.com/@dayoman/live",
-		"http://youtube.com/channel/UC2c4NxvHnbXs3NLpCm641ew/live",
-		"https://www.twitch.tv/dayoman",
+		// "http://youtube.com/channel/UC2c4NxvHnbXs3NLpCm641ew/live",
+		// "https://www.twitch.tv/dayoman",
 		// "https://www.youtube.com/watch?v=4xDzrJKXOOY",
 		// "https://www.twitch.tv/forsen", // basically a hard code for constant chats
 		// "https://www.twitch.tv/jynxzi", // basically a hard code for constant chats

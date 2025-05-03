@@ -3,7 +3,6 @@ package routes
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"iter"
 	"strings"
 )
@@ -50,6 +49,28 @@ type Token struct {
 
 type Tokenizer struct {
 	EmoteCache map[string]*Emote
+}
+
+// ScanColon is a split function for a [Scanner] that returns text separated
+// by colons as a token (including surrounding colons).
+func ScanColon(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	// :: -> :
+	if len(data) >= 2 && data[1] == ':' {
+		return 1, data[:1], nil
+	}
+	offset := 0
+	if data[0] == ':' {
+		offset = 1
+	}
+	end := bytes.Index(data[1:], []byte{':'}) + 1
+	// ending : not found
+	if end <= 0 {
+		return len(data), data, nil
+	}
+	return end + offset, data[:end+offset], nil
 }
 
 // Recursively check for the presence of colors and effects
@@ -114,6 +135,41 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 	return p.iterWordEffect(yield, postfix, depth+1)
 }
 
+// Helper to iterate over YouTube style emotes
+func (p Tokenizer) iterYoutube(yield func(Token) bool, word string, sb strings.Builder) strings.Builder {
+	scanner := bufio.NewScanner(strings.NewReader(word))
+	scanner.Split(ScanColon)
+
+	// Iterate over potential emotes
+	tok := Token{Type: TokenTypeText}
+	for scanner.Scan() {
+		text := scanner.Text()
+		if emote, ok := p.EmoteCache[text]; ok && text[0] == ':' {
+			// yield text before emote
+			tok.Text = strings.TrimSpace(sb.String())
+			if tok.Text != "" {
+				if !yield(tok) {
+					return sb
+				}
+			}
+			tok.Type = TokenTypeEmote
+			tok.Text = text
+			tok.Emote = emote
+			if !yield(tok) {
+				return sb
+			}
+			sb.Reset()
+		} else {
+			tok.Type = TokenTypeText
+			tok.Emote = nil
+			sb.WriteString(text)
+		}
+	}
+	sb.WriteByte(' ')
+
+	return sb
+}
+
 // Returns an iterator over the string which yields tokens.
 func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 	return func(yield func(Token) bool) {
@@ -133,8 +189,9 @@ func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 		if stop {
 			return
 		}
-		sb.WriteString(lastWord)
-		sb.WriteByte(' ')
+
+		// Scan last word for youtube emotes
+		sb = p.iterYoutube(yield, lastWord, sb)
 
 		tok := Token{Type: TokenTypeText}
 
@@ -161,8 +218,7 @@ func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 			} else {
 				tok.Type = TokenTypeText
 				tok.Emote = nil
-				sb.WriteString(word)
-				sb.WriteByte(' ')
+				sb = p.iterYoutube(yield, word, sb)
 			}
 		}
 
@@ -172,50 +228,6 @@ func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 		if tok.Text != "" {
 			if !yield(tok) {
 				return
-			}
-		}
-	}
-}
-
-// ScanYouTubeEmotes is a split function for a [Scanner] that returns each emote as a token.
-func ScanYouTubeEmotes(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if atEOF && len(data) == 0 {
-		return 0, nil, nil
-	}
-	start := bytes.Index(data, []byte{':'})
-	// starting : not found
-	if start < 0 {
-		return 0, nil, nil
-	}
-	end := start + bytes.Index(data[start+1:], []byte{':'}) + 1
-	// ending : not found
-	if end <= 0 {
-		return 0, nil, nil
-	}
-	return end, data[start : end+1], nil
-}
-
-// Special iterator to tokenize youtube emotes
-// Valid emote format -> :EMOTE: (start and end with :)
-func (p Tokenizer) IterYouTube(s string) iter.Seq[Token] {
-	return func(yield func(Token) bool) {
-		var word string
-
-		scanner := bufio.NewScanner(strings.NewReader(s))
-		scanner.Split(ScanYouTubeEmotes)
-
-		for scanner.Scan() {
-			word = scanner.Text()
-			fmt.Println(word)
-			if e, ok := p.EmoteCache[word]; ok {
-				tok := Token{
-					Type:  TokenTypeEmote,
-					Text:  word,
-					Emote: e,
-				}
-				if !yield(tok) {
-					return
-				}
 			}
 		}
 	}

@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"bufio"
 	"iter"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -242,16 +244,6 @@ func TestTokenizer(t *testing.T) {
 
 	iterYouTubeTests := []Test{
 		{
-			Name:     "noEmote",
-			Message:  "This has no emotes",
-			Expected: []Token{},
-		},
-		{
-			Name:     "effectsNoEmote",
-			Message:  "cyan:wave2:This has effects!",
-			Expected: []Token{},
-		},
-		{
 			Name:    "emote",
 			Message: ":goat-turqouise-white-horns:",
 			Expected: []Token{
@@ -262,6 +254,7 @@ func TestTokenizer(t *testing.T) {
 			Name:    "emoteExtraColon",
 			Message: "::goat-turqouise-white-horns:",
 			Expected: []Token{
+				{TokenTypeText, ":", nil},
 				{TokenTypeEmote, ":goat-turqouise-white-horns:", tokenizer.EmoteCache[":goat-turqouise-white-horns:"]},
 			},
 		},
@@ -269,7 +262,9 @@ func TestTokenizer(t *testing.T) {
 			Name:    "emoteManyColon",
 			Message: ":::slk:j::goat-turqouise-white-horns::fj::fd:::",
 			Expected: []Token{
+				{TokenTypeText, ":::slk:j:", nil},
 				{TokenTypeEmote, ":goat-turqouise-white-horns:", tokenizer.EmoteCache[":goat-turqouise-white-horns:"]},
+				{TokenTypeText, ":fj::fd:::", nil},
 			},
 		},
 		{
@@ -285,7 +280,21 @@ func TestTokenizer(t *testing.T) {
 			Name:    "effectEmotes",
 			Message: "patternq3q3q3q3:wave2::goat-turqouise-white-horns::_DayoHog:",
 			Expected: []Token{
+				{TokenTypePattern, "q3q3q3q3", nil},
+				{TokenTypeEffect, "wave2", nil},
 				{TokenTypeEmote, ":goat-turqouise-white-horns:", tokenizer.EmoteCache[":goat-turqouise-white-horns:"]},
+				{TokenTypeEmote, ":_DayoHog:", tokenizer.EmoteCache[":_DayoHog:"]},
+			},
+		},
+		{
+			Name:    "effectTextEmotes",
+			Message: "cyan:wave2: Lets Go! :goat-turqouise-white-horns: Woo :_DayoHog:",
+			Expected: []Token{
+				{TokenTypeColour, "cyan", nil},
+				{TokenTypeEffect, "wave2", nil},
+				{TokenTypeText, "Lets Go!", nil},
+				{TokenTypeEmote, ":goat-turqouise-white-horns:", tokenizer.EmoteCache[":goat-turqouise-white-horns:"]},
+				{TokenTypeText, "Woo", nil},
 				{TokenTypeEmote, ":_DayoHog:", tokenizer.EmoteCache[":_DayoHog:"]},
 			},
 		},
@@ -298,7 +307,7 @@ func TestTokenizer(t *testing.T) {
 			tokens = append(tokens, tok)
 		}
 		if !reflect.DeepEqual(tokens, test.Expected) {
-			t.Logf("\n\nMessage:  <%s>\nExpected: %v\nGot:      %v\n\n", test.Message, test.Expected, tokens)
+			t.Logf("\n\nMessage:  [ %s ]\nExpected: %v\nGot:      %v\n\n", test.Message, test.Expected, tokens)
 			t.Fail()
 		}
 	}
@@ -314,8 +323,71 @@ func TestTokenizer(t *testing.T) {
 		})
 	}
 	for _, test := range iterYouTubeTests {
-		t.Run("IterYouTube-"+test.Name, func(t *testing.T) {
-			RunIterTest(t, tokenizer.IterYouTube(test.Message), test)
+		t.Run("Iter-"+test.Name, func(t *testing.T) {
+			RunIterTest(t, tokenizer.Iter(test.Message), test)
+		})
+	}
+}
+
+func TestScanColon(t *testing.T) {
+	type Test struct {
+		Name     string
+		Message  string
+		Expected []string
+	}
+	tests := []Test{
+		{
+			Name:     "interiorColons",
+			Message:  "abc:d::e:fg:hij",
+			Expected: []string{"abc", ":d:", ":e:", "fg", ":hij"},
+		},
+		{
+			Name:     "exteriorColons",
+			Message:  ":abc:d::e:fg:hij:",
+			Expected: []string{":abc:", "d", ":", ":e:", "fg", ":hij:"},
+		},
+		{
+			Name:     "onlyColonsEven",
+			Message:  "::::::",
+			Expected: []string{":", ":", ":", ":", ":", ":"},
+		},
+		{
+			Name:     "onlyColonsOdd",
+			Message:  ":::::::",
+			Expected: []string{":", ":", ":", ":", ":", ":", ":"},
+		},
+		{
+			Name:     "ytEmotes",
+			Message:  "lol :_DayoHog::_DayoHog:",
+			Expected: []string{"lol ", ":_DayoHog:", ":_DayoHog:"},
+		},
+		{
+			Name:     "ytEmotes2",
+			Message:  "yoooo:_DayoHog::goat-turqouise-white-horns::_DayoHog::goat-turqouise-white-horns:haha",
+			Expected: []string{"yoooo", ":_DayoHog:", ":goat-turqouise-white-horns:", ":_DayoHog:", ":goat-turqouise-white-horns:", "haha"},
+		},
+		{
+			Name:     "ytEmoteLeadingColon",
+			Message:  "::_DayoHog::_DayoHog:",
+			Expected: []string{":", ":_DayoHog:", ":_DayoHog:"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("Scan-"+test.Name, func(t *testing.T) {
+			scanner := bufio.NewScanner(strings.NewReader(test.Message))
+			scanner.Split(ScanColon)
+
+			i := 0
+			for scanner.Scan() {
+				if i >= len(test.Expected) {
+					t.Fatalf("Overscan: [ %s ]", scanner.Text())
+				}
+				if scanner.Text() != test.Expected[i] {
+					t.Errorf("\nScanned:  [ %s ]\nExpected: [ %s ]\n", scanner.Text(), test.Expected[i])
+				}
+				i++
+			}
 		})
 	}
 }

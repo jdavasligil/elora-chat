@@ -37,7 +37,7 @@ function initializeWebSocket() {
 
   const localUrl = `${wsProtocol}://${window.location.host}`;
   const wsUrl = `${useDeployedApi ? deployedUrl : localUrl}/ws/chat`;
-  
+
   if (
     ws &&
     (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)
@@ -51,11 +51,11 @@ function initializeWebSocket() {
   console.log("WebSocket URL:", wsUrl);
   ws = new WebSocket(wsUrl);
 
-  ws.onopen = function () {
+  ws.onopen = function() {
     console.log("WebSocket Connection established");
   };
 
-  ws.onmessage = function (event) {
+  ws.onmessage = function(event) {
     // console.log("Message received: ", event.data);
     const msg = event.data;
     if (msg === "__keepalive__") {
@@ -64,6 +64,7 @@ function initializeWebSocket() {
 
     try {
       const parsedMsg = JSON.parse(msg);
+      console.log(parsedMsg["fragments"])
       messageQueue.push(parsedMsg);
       if (!processing) {
         processMessageQueue();
@@ -73,11 +74,11 @@ function initializeWebSocket() {
     }
   };
 
-  ws.onerror = function (error) {
+  ws.onerror = function(error) {
     console.error("WebSocket Error:", error);
   };
 
-  ws.onclose = function () {
+  ws.onclose = function() {
     console.log("WebSocket Connection closed. Attempting to reconnect...");
     // Removed the setTimeout here to avoid automatic reconnection.
     // The reconnection attempt will be managed by the visibility change or manual triggers.
@@ -111,9 +112,9 @@ function addMessageEffects(message) {
   const effectNames = lastCommandIndex >= 0 ? message.substr(0, lastCommandIndex).split(':') : [];
   let messageText = lastCommandIndex >= 0 ? message.substr(lastCommandIndex + 2) : message;
   const effects = effectNames
-                  .map(effect => commands.hasOwnProperty(effect) ? commands[effect] : null)
-                  .filter(value => !!value)
-                  .join(' ');
+    .map(effect => commands.hasOwnProperty(effect) ? commands[effect] : null)
+    .filter(value => !!value)
+    .join(' ');
 
   // if no effects were found, set the message text back to the original message content
   if (effects.length <= 0) {
@@ -293,7 +294,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Event listeners that can be initialized after the DOM content is fully loaded
     document
       .getElementById("twitchLoginButton")
-      .addEventListener("click", function () {
+      .addEventListener("click", function() {
         window.location.href = "/login/twitch";
       });
 
@@ -305,7 +306,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document
       .getElementById("messageInput")
-      .addEventListener("keydown", function (e) {
+      .addEventListener("keydown", function(e) {
         if (e.key === "Enter") {
           sendMessage();
         }
@@ -319,7 +320,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("online", handleVisibilityChange);
     window.addEventListener("focus", handleVisibilityChange);
 
-    window.addEventListener("beforeunload", function () {
+    window.addEventListener("beforeunload", function() {
       if (ws) {
         ws.close();
         ws = null;
@@ -386,7 +387,7 @@ function sendMessage() {
 
 document
   .getElementById("messageInput")
-  .addEventListener("keydown", function (e) {
+  .addEventListener("keydown", function(e) {
     if (e.key === "Enter") {
       sendMessage();
     }
