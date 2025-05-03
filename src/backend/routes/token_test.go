@@ -29,6 +29,16 @@ func TestTokenizer(t *testing.T) {
 				Name:   "FeelsGoodMan",
 				Images: []Image{{URL: "https://cdn.test.net/v1/emotes/4/1x.webp"}},
 			},
+			":goat-turqouise-white-horns:": {
+				ID:     "5",
+				Name:   ":goat-turqouise-white-horns:",
+				Images: []Image{{URL: "https://cdn.test.net/v1/emotes/5/1x.webp"}},
+			},
+			":_DayoHog:": {
+				ID:     "6",
+				Name:   ":_DayoHog:",
+				Images: []Image{{URL: "https://cdn.test.net/v1/emotes/6/1x.webp"}},
+			},
 		},
 	}
 	type Test struct {
@@ -162,10 +172,9 @@ func TestTokenizer(t *testing.T) {
 			},
 		},
 		{
-			Name:    "patternEmpty",
-			Message: "pattern:",
-			Expected: []Token{
-			},
+			Name:     "patternEmpty",
+			Message:  "pattern:",
+			Expected: []Token{},
 		},
 		{
 			Name:    "patternMax",
@@ -231,6 +240,57 @@ func TestTokenizer(t *testing.T) {
 		},
 	}
 
+	iterYouTubeTests := []Test{
+		{
+			Name:     "noEmote",
+			Message:  "This has no emotes",
+			Expected: []Token{},
+		},
+		{
+			Name:     "effectsNoEmote",
+			Message:  "cyan:wave2:This has effects!",
+			Expected: []Token{},
+		},
+		{
+			Name:    "emote",
+			Message: ":goat-turqouise-white-horns:",
+			Expected: []Token{
+				{TokenTypeEmote, ":goat-turqouise-white-horns:", tokenizer.EmoteCache[":goat-turqouise-white-horns:"]},
+			},
+		},
+		{
+			Name:    "emoteExtraColon",
+			Message: "::goat-turqouise-white-horns:",
+			Expected: []Token{
+				{TokenTypeEmote, ":goat-turqouise-white-horns:", tokenizer.EmoteCache[":goat-turqouise-white-horns:"]},
+			},
+		},
+		{
+			Name:    "emoteManyColon",
+			Message: ":::slk:j::goat-turqouise-white-horns::fj::fd:::",
+			Expected: []Token{
+				{TokenTypeEmote, ":goat-turqouise-white-horns:", tokenizer.EmoteCache[":goat-turqouise-white-horns:"]},
+			},
+		},
+		{
+			Name:    "emotes",
+			Message: ":_DayoHog::_DayoHog::_DayoHog:",
+			Expected: []Token{
+				{TokenTypeEmote, ":_DayoHog:", tokenizer.EmoteCache[":_DayoHog:"]},
+				{TokenTypeEmote, ":_DayoHog:", tokenizer.EmoteCache[":_DayoHog:"]},
+				{TokenTypeEmote, ":_DayoHog:", tokenizer.EmoteCache[":_DayoHog:"]},
+			},
+		},
+		{
+			Name:    "effectEmotes",
+			Message: "patternq3q3q3q3:wave2::goat-turqouise-white-horns::_DayoHog:",
+			Expected: []Token{
+				{TokenTypeEmote, ":goat-turqouise-white-horns:", tokenizer.EmoteCache[":goat-turqouise-white-horns:"]},
+				{TokenTypeEmote, ":_DayoHog:", tokenizer.EmoteCache[":_DayoHog:"]},
+			},
+		},
+	}
+
 	// Helper to run iterator tests
 	RunIterTest := func(t *testing.T, iterator iter.Seq[Token], test Test) {
 		tokens := []Token{}
@@ -251,6 +311,11 @@ func TestTokenizer(t *testing.T) {
 	for _, test := range iterTests {
 		t.Run("Iter-"+test.Name, func(t *testing.T) {
 			RunIterTest(t, tokenizer.Iter(test.Message), test)
+		})
+	}
+	for _, test := range iterYouTubeTests {
+		t.Run("IterYouTube-"+test.Name, func(t *testing.T) {
+			RunIterTest(t, tokenizer.IterYouTube(test.Message), test)
 		})
 	}
 }
