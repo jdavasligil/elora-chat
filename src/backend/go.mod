@@ -5,7 +5,7 @@ go 1.24.2
 require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.1
-	github.com/jdavasligil/emodl v0.2.0
+	github.com/jdavasligil/emodl v0.2.1
 	golang.org/x/oauth2 v0.18.0
 )
 
