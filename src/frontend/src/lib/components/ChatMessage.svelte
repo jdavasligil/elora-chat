@@ -4,7 +4,6 @@
   import { TwitchIcon, YoutubeIcon } from './icons';
 
   let { message }: { message: Message } = $props();
-  console.log(message);
 
   function formatMessage(): { messageWithHTML: string; effects: string } {
     let messageWithEmotes = sanitizeMessage(message.message);
