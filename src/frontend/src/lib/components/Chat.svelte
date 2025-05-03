@@ -5,10 +5,10 @@
 
   import { deployedUrl, useDeployedApi } from '$lib/config';
 
-  let ws: WebSocket | null = null;
-  const messageQueue: Message[] = [];
-  let messages: Message[] = [];
-  let processing = false;
+  let ws: WebSocket | null = $state(null);
+  const messageQueue: Message[] = $state([]);
+  let messages: Message[] = $state([]);
+  let processing = $state(false);
 
   function processMessageQueue() {
     // console.log("Processing message queue", messageQueue);
@@ -32,7 +32,7 @@
     }
 
     // Add the message to the messages array
-    messages = [...messages, message];
+    messages.push(message);
 
     // Continue processing after a delay
     setTimeout(processMessageQueue, 0); // Delay of x ms between messages
