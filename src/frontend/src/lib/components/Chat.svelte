@@ -5,6 +5,8 @@
 
   import { deployedUrl, useDeployedApi } from '$lib/config';
 
+  let container: HTMLDivElement;
+
   let ws: WebSocket | null = $state(null);
   const messageQueue: Message[] = $state([]);
   const messages: Message[] = $state([]);
@@ -33,6 +35,11 @@
 
     // Add the message to the messages array
     messages.push(message);
+
+    // Scroll to the bottom of the chat container
+    setTimeout(() => {
+      container.scrollTop = container.scrollHeight;
+    }, 0);
 
     // Continue processing after a delay
     setTimeout(processMessageQueue, 0); // Delay of x ms between messages
@@ -91,7 +98,7 @@
   });
 </script>
 
-<div id="chat-container">
+<div id="chat-container" bind:this={container}>
   {#each messages as message}
     <ChatMessage {message} />
   {/each}
