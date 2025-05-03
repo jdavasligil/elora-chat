@@ -95,6 +95,13 @@
 
   onMount(() => {
     initializeWebSocket();
+
+    window.addEventListener('beforeunload', () => {
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+    });
   });
 </script>
 
