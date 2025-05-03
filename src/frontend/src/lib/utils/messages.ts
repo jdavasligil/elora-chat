@@ -1,5 +1,5 @@
 import type { Emote } from '$lib/types/messages';
-import { deployedUrl, useDeployedApi } from '$lib/config';
+import { buildApiUrl } from './misc';
 
 export function sanitizeMessage(message: string): string {
   // replace < and > with HTML entities to prevent XSS attacks
@@ -62,7 +62,7 @@ function escapeRegExp(string: string): string {
 }
 
 function loadImage(source: string): string {
-  return `${useDeployedApi ? deployedUrl : ''}/imageproxy?url=${encodeURIComponent(source)}`;
+  return buildApiUrl(`/imageproxy?url=${encodeURIComponent(source)}`);
 }
 
 export function replaceEmotes(message: string, emotes: Emote[]): string {

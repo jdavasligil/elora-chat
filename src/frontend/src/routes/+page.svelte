@@ -1,5 +1,11 @@
 <script>
+  import { checkLoginStatus } from '$lib/api/auth.svelte';
   import { Chat, Header, SendMessage } from '$lib/components';
+  import { onMount } from 'svelte';
+
+  onMount(() => {
+    checkLoginStatus();
+  });
 </script>
 
 <svelte:head>

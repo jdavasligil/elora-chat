@@ -7,7 +7,7 @@
 
   let ws: WebSocket | null = $state(null);
   const messageQueue: Message[] = $state([]);
-  let messages: Message[] = $state([]);
+  const messages: Message[] = $state([]);
   let processing = $state(false);
 
   function processMessageQueue() {
