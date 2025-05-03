@@ -3,6 +3,9 @@
   import { Chat, Header, SendMessage } from '$lib/components';
   import { onMount } from 'svelte';
 
+  const urlParams = new URLSearchParams(window.location.search);
+  let isPopout = urlParams.has('popout');
+
   onMount(() => {
     checkLoginStatus();
   });
@@ -12,7 +15,9 @@
   <title>Chat Display</title>
 </svelte:head>
 
-<Header />
+{#if !isPopout}
+  <Header />
+{/if}
 <Chat />
 <SendMessage />
 

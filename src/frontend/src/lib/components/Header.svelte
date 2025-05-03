@@ -6,7 +6,7 @@
   function popoutChat() {
     const popoutFeatures =
       'scrollbars=no,resizable=yes,status=no,location=no,toolbar=no,menubar=no';
-    window.open('/', 'ChatPopout', popoutFeatures);
+    window.open('/?popout', 'ChatPopout', popoutFeatures);
   }
 </script>
 
