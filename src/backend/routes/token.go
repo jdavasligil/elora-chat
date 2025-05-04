@@ -57,16 +57,17 @@ func ScanColon(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
-	// :: -> :
+	// :: -> : (If double colon, jump to next colon)
 	if len(data) >= 2 && data[1] == ':' {
 		return 1, data[:1], nil
 	}
+	// If we start with a colon, also include the final colon
 	offset := 0
 	if data[0] == ':' {
 		offset = 1
 	}
 	end := bytes.Index(data[1:], []byte{':'}) + 1
-	// ending : not found
+	// ending : not found, just return the rest
 	if end <= 0 {
 		return len(data), data, nil
 	}
@@ -106,10 +107,12 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 
 	prefix, postfix, sepFound := strings.Cut(word, TextEffectSep)
 
+	// No effects found, return word
 	if !sepFound || prefix == "" {
 		return false, word
 	}
 
+	// Look for color, effect, or pattern
 	if _, ok := TextColours[prefix]; ok {
 		tok.Type = TokenTypeColour
 		tok.Text = prefix
@@ -140,10 +143,11 @@ func (p Tokenizer) iterYoutube(yield func(Token) bool, word string, sb strings.B
 	scanner := bufio.NewScanner(strings.NewReader(word))
 	scanner.Split(ScanColon)
 
-	// Iterate over potential emotes
+	// Iterate over potential emotes [:emote:] (scanning over colons)
 	tok := Token{Type: TokenTypeText}
 	for scanner.Scan() {
 		text := scanner.Text()
+		// YouTube emote found
 		if emote, ok := p.EmoteCache[text]; ok && text[0] == ':' {
 			// yield text before emote
 			tok.Text = strings.TrimSpace(sb.String())

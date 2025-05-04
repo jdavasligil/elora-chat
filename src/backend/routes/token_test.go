@@ -196,6 +196,16 @@ func TestTokenizer(t *testing.T) {
 	}
 	iterTests := []Test{
 		{
+			Name:    "empty",
+			Message: "",
+			Expected: []Token{},
+		},
+		{
+			Name:    "ws",
+			Message: "  \n\t\r",
+			Expected: []Token{},
+		},
+		{
 			Name:    "randomWS",
 			Message: "  2[qrp]3-4t[    #(YT$ jd  ",
 			Expected: []Token{
