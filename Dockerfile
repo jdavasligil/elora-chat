@@ -15,8 +15,25 @@ RUN go mod download
 # Copy the go source files
 COPY src/backend .
 
+
 # Build the Go app
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server .
+
+# Build the Svelte frontend
+FROM node:23-alpine AS build-frontend
+
+WORKDIR /app
+
+# Install dependencies
+COPY src/frontend/package.json src/frontend/package-lock.json ./
+RUN npm ci
+
+# Copy the source code
+COPY src/frontend/ ./
+
+# Build the Svelte app
+RUN npm run build
+
 
 # Continue with a smaller Python base image for the runtime container
 FROM python:3.9-alpine
@@ -27,7 +44,7 @@ WORKDIR /app
 COPY --from=builder /app/server /app/
 
 # Copy the frontend files to the production image
-COPY src/backend/public /app/public
+COPY --from=build-frontend /app/build /app/public
 
 # Copy the Python script and requirements
 COPY python/fetch_chat.py /app/python/
