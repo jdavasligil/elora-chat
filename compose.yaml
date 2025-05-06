@@ -14,9 +14,9 @@ services:
       - DEPLOYED_URL=${DEPLOYED_URL}
     develop:
       watch:
-        - action: sync
-          path: ./src/backend/public
-          target: /app/public
+        - action: rebuild
+          path: ./src/frontend
+          target: /app
         - action: sync+restart
           path: ./python
           target: /app/python

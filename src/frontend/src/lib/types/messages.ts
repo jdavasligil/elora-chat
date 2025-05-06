@@ -20,11 +20,26 @@ export interface Emote {
   locations: unknown; // TODO: determine the correct type for this
 }
 
+export enum FragmentType {
+  Text = "text",
+  Emote = "emote",
+  Colour = "colour",
+  Effect = "effect",
+  Pattern = "pattern",
+}
+
+export interface Fragment {
+  type: FragmentType;
+  text: string;
+  emote: Emote;
+}
+
 export interface Message {
   author: string;
   badges: Badge[];
   colour: string;
   message: string;
+  fragments: Fragment[];
   emotes: Emote[];
   source: 'YouTube' | 'Twitch';
 }
