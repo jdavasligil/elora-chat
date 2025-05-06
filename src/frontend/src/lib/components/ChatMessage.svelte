@@ -1,19 +1,49 @@
 <script lang="ts">
-  import type { Message } from '$lib/types/messages';
-  import { addMessageEffects, replaceEmotes, sanitizeMessage } from '$lib/utils';
+  import { FragmentType, type Message } from '$lib/types/messages';
+  import { loadImage, imageFromEmote } from '$lib/utils';
   import { TwitchIcon, YoutubeIcon } from './icons';
 
   let { message }: { message: Message } = $props();
 
-  function formatMessage(): { messageWithHTML: string; effects: string } {
-    let messageWithEmotes = sanitizeMessage(message.message);
-    const { messageText, effects } = addMessageEffects(messageWithEmotes);
-    messageWithEmotes = messageText;
+  function formatMessageFragments(): { messageWithHTML: string; effects: string } {
+    const effectList: string[] = [];
+    const messageList: string[] = [];
 
-    return { messageWithHTML: replaceEmotes(messageWithEmotes, message.emotes), effects };
+    let hasColor = false;
+    let hasEffect = false;
+
+    for (const fragment of message.fragments) {
+      switch (fragment.type) {
+      case FragmentType.Text:
+        messageList.push(fragment.text);
+        break;
+      case FragmentType.Emote:
+        if (fragment.emote) {
+          messageList.push(imageFromEmote(fragment.emote).outerHTML);
+        }
+        break;
+      case FragmentType.Colour:
+        if (!hasColor) {
+          effectList.push("color-"+fragment.text);
+          hasColor = true;
+        }
+        break;
+      case FragmentType.Effect:
+        if (!hasEffect) {
+          effectList.push("effect-"+fragment.text)
+          hasEffect = true;
+        }
+        break;
+      case FragmentType.Pattern:
+      // TODO: Handle custom patterns
+        break;
+      }
+    }
+
+    return { messageWithHTML: messageList.join(), effects: effectList.join(" ") };
   }
 
-  const { messageWithHTML, effects } = formatMessage();
+  const { messageWithHTML, effects } = formatMessageFragments();
 </script>
 
 <div class="chat-message">
@@ -32,7 +62,7 @@
       {#if badge.icons && badge.icons.length > 0}
         <img
           class="badge-icon"
-          src={badge.icons[badge.icons.length - 1].url}
+          src={loadImage(badge.icons[badge.icons.length - 1].url)}
           title={badge.title}
           alt={badge.title}
         />

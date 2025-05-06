@@ -61,8 +61,16 @@ function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
-function loadImage(source: string): string {
+export function loadImage(source: string): string {
   return buildApiUrl(`/imageproxy?url=${encodeURIComponent(source)}`);
+}
+
+export function imageFromEmote(emote: Emote): HTMLImageElement {
+      const emoteImg = document.createElement('img');
+      emoteImg.className = 'emote-image';
+      emoteImg.alt = emote.name;
+      emoteImg.src = loadImage(emote.images[0].url);
+      return emoteImg;
 }
 
 export function replaceEmotes(message: string, emotes: Emote[]): string {
@@ -70,11 +78,7 @@ export function replaceEmotes(message: string, emotes: Emote[]): string {
 
   if (emotes && emotes.length > 0) {
     emotes.forEach((emote) => {
-      const emoteImg = document.createElement('img');
-      emoteImg.className = 'emote-image';
-      emoteImg.alt = emote.name;
-      emoteImg.src = loadImage(emote.images[0].url);
-
+      const emoteImg = imageFromEmote(emote);
       const escapedEmoteName = escapeRegExp(emote.name);
       const emoteRegex = new RegExp(escapedEmoteName, 'g');
       newMessage = newMessage.replace(emoteRegex, emoteImg.outerHTML);
