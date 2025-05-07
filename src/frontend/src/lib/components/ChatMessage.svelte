@@ -1,49 +1,11 @@
 <script lang="ts">
-  import { FragmentType, type Message } from '$lib/types/messages';
-  import { loadImage, imageFromEmote } from '$lib/utils';
+  import { type Message } from '$lib/types/messages';
+  import { loadImage, formatMessageFragments } from '$lib/utils';
   import { TwitchIcon, YoutubeIcon } from './icons';
 
   let { message }: { message: Message } = $props();
 
-  function formatMessageFragments(): { messageWithHTML: string; effects: string } {
-    const effectList: string[] = [];
-    const messageList: string[] = [];
-
-    let hasColor = false;
-    let hasEffect = false;
-
-    for (const fragment of message.fragments) {
-      switch (fragment.type) {
-      case FragmentType.Text:
-        messageList.push(fragment.text);
-        break;
-      case FragmentType.Emote:
-        if (fragment.emote) {
-          messageList.push(imageFromEmote(fragment.emote).outerHTML);
-        }
-        break;
-      case FragmentType.Colour:
-        if (!hasColor) {
-          effectList.push("color-"+fragment.text);
-          hasColor = true;
-        }
-        break;
-      case FragmentType.Effect:
-        if (!hasEffect) {
-          effectList.push("effect-"+fragment.text)
-          hasEffect = true;
-        }
-        break;
-      case FragmentType.Pattern:
-      // TODO: Handle custom patterns
-        break;
-      }
-    }
-
-    return { messageWithHTML: messageList.join(), effects: effectList.join(" ") };
-  }
-
-  const { messageWithHTML, effects } = formatMessageFragments();
+  const { messageWithHTML, effects } = formatMessageFragments(message.fragments);
 </script>
 
 <div class="chat-message">
@@ -199,7 +161,7 @@
   }
 
   .effect-wave {
-    /* TODO: implement this */
+    animation: wave 0.45s ease-in-out;
   }
 
   .effect-shake {

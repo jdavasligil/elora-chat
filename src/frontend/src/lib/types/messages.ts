@@ -20,7 +20,7 @@ export interface Emote {
   locations: unknown; // TODO: determine the correct type for this
 }
 
-export enum FragmentType {
+export const enum FragmentType {
   Text = "text",
   Emote = "emote",
   Colour = "colour",
@@ -31,7 +31,7 @@ export enum FragmentType {
 export interface Fragment {
   type: FragmentType;
   text: string;
-  emote: Emote;
+  emote: Emote | null;
 }
 
 export interface Message {
