@@ -4,11 +4,31 @@
   import { TwitchIcon, YoutubeIcon } from './icons';
 
   let { message }: { message: Message } = $props();
+  let visible = $state(true);
 
   const { messageWithHTML, effects } = formatMessageFragments(message.fragments);
+
+  function toggleVisible() {
+    visible = !visible;
+  }
+  function keyHandler(event: KeyboardEvent) {
+    switch (event.key) {
+      case 'h':
+      case 'H':
+        toggleVisible();
+        break;
+    }
+  }
 </script>
 
-<div class="chat-message">
+<div
+  role="button"
+  aria-pressed="false"
+  tabindex="0"
+  onkeypress={keyHandler}
+  onclick={toggleVisible}
+  class="chat-message"
+>
   <span class="sender">
     {#if message.source === 'Twitch'}
       <span title="Twitch">
@@ -36,9 +56,11 @@
     </span>
   </span>
 
-  <span class={['message-text', effects].filter(Boolean).join(' ')}>
-    {@html messageWithHTML}
-  </span>
+  {#if visible}
+    <span class={['message-text', effects].filter(Boolean).join(' ')}>
+      {@html messageWithHTML}
+    </span>
+  {/if}
 </div>
 
 <style lang="scss">
