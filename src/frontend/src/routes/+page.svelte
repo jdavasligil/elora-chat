@@ -140,7 +140,8 @@
   }
 
   @keyframes -global-wave {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateY(-0.25rem);
     }
     50% {
@@ -149,7 +150,8 @@
   }
 
   @keyframes -global-wave2 {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateX(0) translateY(-0.25rem);
     }
     50% {

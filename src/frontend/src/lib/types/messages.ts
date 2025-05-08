@@ -21,11 +21,11 @@ export interface Emote {
 }
 
 export const enum FragmentType {
-  Text = "text",
-  Emote = "emote",
-  Colour = "colour",
-  Effect = "effect",
-  Pattern = "pattern",
+  Text = 'text',
+  Emote = 'emote',
+  Colour = 'colour',
+  Effect = 'effect',
+  Pattern = 'pattern'
 }
 
 export interface Fragment {
