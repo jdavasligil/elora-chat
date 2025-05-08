@@ -15,6 +15,7 @@ export function imageFromEmote(emote: Emote): HTMLImageElement {
   const emoteImg = document.createElement('img');
   emoteImg.className = 'emote-image';
   emoteImg.alt = emote.name;
+  emoteImg.title = emote.name;
   emoteImg.src = loadImage(emote.images[0].url);
   return emoteImg;
 }
