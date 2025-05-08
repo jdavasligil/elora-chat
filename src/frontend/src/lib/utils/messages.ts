@@ -129,7 +129,11 @@ export function formatMessageFragments(fragments: Fragment[]): { messageWithHTML
       messageList.push(imageFromEmote(fragment.emote).outerHTML);
     } else {
 
-      messageList.push(sanitizeMessage(fragment.text).split('').map(c => `<span>${c}</span>`).join());
+      const msg = sanitizeMessage(fragment.text)
+      .split('')
+      .map(c => (c === ' ') ? ('&nbsp') : (`<span>${c}</span>`))
+      .join('');
+      messageList.push(msg);
     }
     handleSpanEffect();
   }
@@ -204,5 +208,5 @@ export function formatMessageFragments(fragments: Fragment[]): { messageWithHTML
   // Recursively generate the HTML message and gather styles
   recursiveDescent();
 
-  return { messageWithHTML: messageList.join(), effects: effectList.join(" ") };
+  return { messageWithHTML: messageList.join(''), effects: effectList.join(" ") };
 }

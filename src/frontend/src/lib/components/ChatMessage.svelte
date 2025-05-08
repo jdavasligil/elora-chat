@@ -160,11 +160,83 @@
     animation: glow2 3s linear infinite;
   }
 
-  .effect-wave {
-    animation: wave 0.45s ease-in-out;
-  }
+  :global {
+    .effect-wave span {
+      display: inline-block;
+      animation: wave 1s ease-in-out infinite;
+    }
+    .effect-wave2 span {
+      display: inline-block;
+      animation: wave2 1s ease-in-out infinite;
+    }
+    .effect-wave span:nth-child(16n),
+    .effect-wave2 span:nth-child(16n) {
+      animation-delay: 0s;
+    }
+    .effect-wave span:nth-child(16n+1),
+    .effect-wave2 span:nth-child(16n+1) {
+      animation-delay: 0.0625s;
+    }
+    .effect-wave span:nth-child(16n+2),
+    .effect-wave2 span:nth-child(16n+2) {
+      animation-delay: 0.125s;
+    }
+    .effect-wave span:nth-child(16n+3),
+    .effect-wave2 span:nth-child(16n+3) {
+      animation-delay: 0.1875s;
+    }
+    .effect-wave span:nth-child(16n+4),
+    .effect-wave2 span:nth-child(16n+4) {
+      animation-delay: 0.25s;
+    }
+    .effect-wave span:nth-child(16n+5),
+    .effect-wave2 span:nth-child(16n+5) {
+      animation-delay: 0.3125s;
+    }
+    .effect-wave span:nth-child(16n+6),
+    .effect-wave2 span:nth-child(16n+6) {
+      animation-delay: 0.375s;
+    }
+    .effect-wave span:nth-child(16n+7),
+    .effect-wave2 span:nth-child(16n+7) {
+      animation-delay: 0.4375s;
+    }
+    .effect-wave span:nth-child(16n+8),
+    .effect-wave2 span:nth-child(16n+8) {
+      animation-delay: 0.5s;
+    }
+    .effect-wave span:nth-child(16n+9),
+    .effect-wave2 span:nth-child(16n+9) {
+      animation-delay: 0.5625s;
+    }
+    .effect-wave span:nth-child(16n+10),
+    .effect-wave2 span:nth-child(16n+10) {
+      animation-delay: 0.625s;
+    }
+    .effect-wave span:nth-child(16n+11),
+    .effect-wave2 span:nth-child(16n+11) {
+      animation-delay: 0.6875s;
+    }
+    .effect-wave span:nth-child(16n+12),
+    .effect-wave2 span:nth-child(16n+12) {
+      animation-delay: 0.75s;
+    }
+    .effect-wave span:nth-child(16n+13),
+    .effect-wave2 span:nth-child(16n+13) {
+      animation-delay: 0.8125s;
+    }
+    .effect-wave span:nth-child(16n+14),
+    .effect-wave2 span:nth-child(16n+14) {
+      animation-delay: 0.875s;
+    }
+    .effect-wave span:nth-child(16n+15),
+    .effect-wave2 span:nth-child(16n+15) {
+      animation-delay: 0.9375s;
+    }
 
-  .effect-shake {
-    /* TODO: implement this */
+    .effect-shake {
+      /* TODO: implement this */
+      animation: wave 1s linear infinite;
+    }
   }
 </style>

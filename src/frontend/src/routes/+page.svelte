@@ -138,4 +138,22 @@
       color: #ffffff;
     }
   }
+
+  @keyframes -global-wave {
+    0%, 100% {
+      transform: translateY(-0.25rem);
+    }
+    50% {
+      transform: translateY(0.25rem);
+    }
+  }
+
+  @keyframes -global-wave2 {
+    0%, 100% {
+      transform: translateX(0) translateY(-0.25rem);
+    }
+    50% {
+      transform: translateX(0.5rem) translateY(0.25rem);
+    }
+  }
 </style>
