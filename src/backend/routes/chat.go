@@ -196,29 +196,9 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 			msg.Source = "YouTube"
 		}
 
-		uniqueEmotes := map[string]struct{}{}
-
 		// Add unknown emotes to the emote cache for tokenization
 		for _, e := range msg.Emotes {
 			tokenizer.EmoteCache[e.Name] = &e
-			// Keep track of unique emotes to prevent duplicates
-			uniqueEmotes[e.Name] = struct{}{}
-		}
-
-		// Find third party emotes in chat message
-		// TODO: After refactoring frontend to use tokens,
-		// determine if we still need to send Emotes
-		strs := strings.Fields(msg.Message)
-		for _, s := range strs {
-			if e, ok := tokenizer.EmoteCache[s]; ok {
-				uniqueEmotes[e.Name] = struct{}{}
-			}
-		}
-
-		// Ensure emotes are unique
-		msg.Emotes = msg.Emotes[:0]
-		for name := range uniqueEmotes {
-			msg.Emotes = append(msg.Emotes, *tokenizer.EmoteCache[name])
 		}
 
 		// Tokenize message
