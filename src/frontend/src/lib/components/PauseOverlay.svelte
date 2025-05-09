@@ -20,10 +20,11 @@
     transform: translate(-50%, -80%);
     z-index: 1000;
     text-align: center;
-    border: 1px solid #242729;
+    border: 2px solid #242729;
     border-radius: 8px;
-    background-color: rgba(12, 15, 18, 0.8);
+    background-color: rgba(12, 15, 18, 0.9);
     font-weight: bold;
-    padding: 8px;
+    padding: 0px 8px;
+    pointer-events: none;
   }
 </style>
