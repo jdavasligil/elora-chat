@@ -15,16 +15,32 @@
   let paused = $state(false);
   let newMessageCount = $state(0);
 
+  let mousePosition = { x: 0, y: 0 };
+
+  document.addEventListener('mousemove', (e) => {
+    mousePosition.x = e.x;
+    mousePosition.y = e.y;
+  });
+
   function pauseChat() {
     paused = true;
   }
 
   function unpauseChat() {
-    paused = false;
-    setTimeout(() => {
-      container.scrollTop = container.scrollHeight;
-      newMessageCount = 0;
-    }, 0);
+    const bound = container.getBoundingClientRect();
+    const pad = 32;
+    if (
+      mousePosition.x <= bound.left + pad ||
+      mousePosition.x >= bound.right - pad ||
+      mousePosition.y <= bound.top + pad ||
+      mousePosition.y >= bound.bottom - pad
+    ) {
+      paused = false;
+      setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+        newMessageCount = 0;
+      }, 0);
+    }
   }
 
   function processMessageQueue() {
