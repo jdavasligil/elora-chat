@@ -1,22 +1,34 @@
 <script lang="ts">
-  import type { Message } from '$lib/types/messages';
-  import { addMessageEffects, replaceEmotes, sanitizeMessage } from '$lib/utils';
+  import { type Message } from '$lib/types/messages';
+  import { loadImage, formatMessageFragments } from '$lib/utils';
   import { TwitchIcon, YoutubeIcon } from './icons';
 
   let { message }: { message: Message } = $props();
+  let visible = $state(true);
 
-  function formatMessage(): { messageWithHTML: string; effects: string } {
-    let messageWithEmotes = sanitizeMessage(message.message);
-    const { messageText, effects } = addMessageEffects(messageWithEmotes);
-    messageWithEmotes = messageText;
+  const { messageWithHTML, effects } = formatMessageFragments(message.fragments);
 
-    return { messageWithHTML: replaceEmotes(messageWithEmotes, message.emotes), effects };
+  function toggleVisible() {
+    visible = !visible;
   }
-
-  const { messageWithHTML, effects } = formatMessage();
+  function keyHandler(event: KeyboardEvent) {
+    switch (event.key) {
+      case 'h':
+      case 'H':
+        toggleVisible();
+        break;
+    }
+  }
 </script>
 
-<div class="chat-message">
+<div
+  role="button"
+  aria-pressed="false"
+  tabindex="0"
+  onkeypress={keyHandler}
+  onclick={toggleVisible}
+  class="chat-message"
+>
   <span class="sender">
     {#if message.source === 'Twitch'}
       <span title="Twitch">
@@ -32,7 +44,7 @@
       {#if badge.icons && badge.icons.length > 0}
         <img
           class="badge-icon"
-          src={badge.icons[badge.icons.length - 1].url}
+          src={loadImage(badge.icons[badge.icons.length - 1].url)}
           title={badge.title}
           alt={badge.title}
         />
@@ -44,9 +56,11 @@
     </span>
   </span>
 
-  <span class={['message-text', effects].filter(Boolean).join(' ')}>
-    {@html messageWithHTML}
-  </span>
+  {#if visible}
+    <span class={['message-text', effects].filter(Boolean).join(' ')}>
+      {@html messageWithHTML}
+    </span>
+  {/if}
 </div>
 
 <style lang="scss">
@@ -168,11 +182,83 @@
     animation: glow2 3s linear infinite;
   }
 
-  .effect-wave {
-    /* TODO: implement this */
-  }
+  :global {
+    .effect-wave span {
+      display: inline-block;
+      animation: wave 1s ease-in-out infinite;
+    }
+    .effect-wave2 span {
+      display: inline-block;
+      animation: wave2 1s ease-in-out infinite;
+    }
+    .effect-wave span:nth-child(16n),
+    .effect-wave2 span:nth-child(16n) {
+      animation-delay: 0s;
+    }
+    .effect-wave span:nth-child(16n + 1),
+    .effect-wave2 span:nth-child(16n + 1) {
+      animation-delay: 0.0625s;
+    }
+    .effect-wave span:nth-child(16n + 2),
+    .effect-wave2 span:nth-child(16n + 2) {
+      animation-delay: 0.125s;
+    }
+    .effect-wave span:nth-child(16n + 3),
+    .effect-wave2 span:nth-child(16n + 3) {
+      animation-delay: 0.1875s;
+    }
+    .effect-wave span:nth-child(16n + 4),
+    .effect-wave2 span:nth-child(16n + 4) {
+      animation-delay: 0.25s;
+    }
+    .effect-wave span:nth-child(16n + 5),
+    .effect-wave2 span:nth-child(16n + 5) {
+      animation-delay: 0.3125s;
+    }
+    .effect-wave span:nth-child(16n + 6),
+    .effect-wave2 span:nth-child(16n + 6) {
+      animation-delay: 0.375s;
+    }
+    .effect-wave span:nth-child(16n + 7),
+    .effect-wave2 span:nth-child(16n + 7) {
+      animation-delay: 0.4375s;
+    }
+    .effect-wave span:nth-child(16n + 8),
+    .effect-wave2 span:nth-child(16n + 8) {
+      animation-delay: 0.5s;
+    }
+    .effect-wave span:nth-child(16n + 9),
+    .effect-wave2 span:nth-child(16n + 9) {
+      animation-delay: 0.5625s;
+    }
+    .effect-wave span:nth-child(16n + 10),
+    .effect-wave2 span:nth-child(16n + 10) {
+      animation-delay: 0.625s;
+    }
+    .effect-wave span:nth-child(16n + 11),
+    .effect-wave2 span:nth-child(16n + 11) {
+      animation-delay: 0.6875s;
+    }
+    .effect-wave span:nth-child(16n + 12),
+    .effect-wave2 span:nth-child(16n + 12) {
+      animation-delay: 0.75s;
+    }
+    .effect-wave span:nth-child(16n + 13),
+    .effect-wave2 span:nth-child(16n + 13) {
+      animation-delay: 0.8125s;
+    }
+    .effect-wave span:nth-child(16n + 14),
+    .effect-wave2 span:nth-child(16n + 14) {
+      animation-delay: 0.875s;
+    }
+    .effect-wave span:nth-child(16n + 15),
+    .effect-wave2 span:nth-child(16n + 15) {
+      animation-delay: 0.9375s;
+    }
 
-  .effect-shake {
-    /* TODO: implement this */
+    .effect-shake {
+      /* TODO: implement this */
+      animation: wave 1s linear infinite;
+    }
   }
 </style>

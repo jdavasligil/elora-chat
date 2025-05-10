@@ -47,7 +47,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var emoteCache map[string]Emote
+var tokenizer Tokenizer
 
 type Image struct {
 	URL    string `json:"url"`
@@ -74,13 +74,14 @@ type Badge struct {
 type Message struct {
 	Author  string  `json:"author"` // Adjusted to directly receive the author's name as a string
 	Message string  `json:"message"`
+	Tokens  []Token `json:"fragments"`
 	Emotes  []Emote `json:"emotes"`
 	Badges  []Badge `json:"badges"`
 	Source  string  `json:"source"`
 	Colour  string  `json:"colour"`
 }
 
-func init() {
+func InitRoutes() {
 	// Initialize the Redis client without TLS.
 	redisClient = redis.NewClient(&redis.Options{
 		Addr:            os.Getenv("REDIS_ADDR"),
@@ -121,9 +122,9 @@ func init() {
 	if err != nil {
 		log.Printf("emodl: Failed to load third party emotes: %v", err)
 	}
-	emoteCache = make(map[string]Emote, len(emoteCacheTmp))
+	tokenizer.EmoteCache = make(map[string]*Emote, len(emoteCacheTmp))
 	for name, emote := range emoteCacheTmp {
-		emoteCache[name] = Emote{
+		tokenizer.EmoteCache[name] = &Emote{
 			ID:        emote.ID,
 			Name:      emote.Name,
 			Locations: emote.Locations,
@@ -132,7 +133,7 @@ func init() {
 	}
 	// DEBUG
 	// log.Println("3P EMOTES SUPPORTED")
-	// for _, e := range emoteCache {
+	// for _, e := range tokenizer.EmoteCache {
 	// 	log.Println(e.Name)
 	// }
 }
@@ -195,16 +196,15 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 			msg.Source = "YouTube"
 		}
 
-		// Find third party emotes in chat message
-		uniqueEmotes := map[string]struct{}{}
-		tokens := strings.Fields(msg.Message)
-		for _, tok := range tokens {
-			if e, ok := emoteCache[tok]; ok {
-				uniqueEmotes[e.Name] = struct{}{}
-			}
+		// Add unknown emotes to the emote cache for tokenization
+		for _, e := range msg.Emotes {
+			tokenizer.EmoteCache[e.Name] = &e
 		}
-		for name := range uniqueEmotes {
-			msg.Emotes = append(msg.Emotes, emoteCache[name])
+
+		// Tokenize message
+		msg.Tokens = make([]Token, 0)
+		for token := range tokenizer.Iter(msg.Message) {
+			msg.Tokens = append(msg.Tokens, token)
 		}
 
 		// Re-marshal the message with the Source set.
