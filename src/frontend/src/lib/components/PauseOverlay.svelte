@@ -1,8 +1,9 @@
 <script lang="ts">
-  let { newMessageCount }: { newMessageCount: number } = $props();
+  let { newMessageCount, unpauseChat }: { newMessageCount: number; unpauseChat: () => void } =
+    $props();
 </script>
 
-<div id="pauseOverlay">
+<button id="pauseOverlay" aria-label="Pause Overlay" type="button" onclick={unpauseChat}>
   {#if newMessageCount === 0}
     <p>Chat Paused</p>
   {:else if newMessageCount === 1}
@@ -10,7 +11,7 @@
   {:else}
     <p>{newMessageCount} New Messages</p>
   {/if}
-</div>
+</button>
 
 <style lang="scss">
   #pauseOverlay {
@@ -22,9 +23,9 @@
     text-align: center;
     border: 2px solid #242729;
     border-radius: 8px;
+    color: white;
     background-color: rgba(12, 15, 18, 0.9);
     font-weight: bold;
     padding: 0px 8px;
-    pointer-events: none;
   }
 </style>

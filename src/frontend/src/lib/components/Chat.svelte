@@ -15,33 +15,27 @@
   let paused = $state(false);
   let newMessageCount = $state(0);
 
-  let mousePosition = { x: 0, y: 0 };
-
-  document.addEventListener('mousemove', (e) => {
-    mousePosition.x = e.x;
-    mousePosition.y = e.y;
-  });
-
   function pauseChat() {
     paused = true;
   }
 
   function unpauseChat() {
-    const bound = container.getBoundingClientRect();
-    const pad = 32;
-    if (
-      mousePosition.x <= bound.left + pad ||
-      mousePosition.x >= bound.right - pad ||
-      mousePosition.y <= bound.top + pad ||
-      mousePosition.y >= bound.bottom - pad
-    ) {
-      paused = false;
-      setTimeout(() => {
-        container.scrollTop = container.scrollHeight;
-        newMessageCount = 0;
-      }, 0);
-    }
+    paused = false;
+    setTimeout(() => {
+      container.scrollTop = container.scrollHeight;
+      newMessageCount = 0;
+    }, 0);
   }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'P' || e.key === 'p') {
+      if (paused) {
+        unpauseChat();
+      } else {
+        pauseChat();
+      }
+    }
+  });
 
   function processMessageQueue() {
     // console.log("Processing message queue", messageQueue);
@@ -145,8 +139,6 @@
   id="chat-container"
   aria-label="Chat messages"
   role="list"
-  onfocusin={pauseChat}
-  onfocusout={unpauseChat}
   onmouseenter={pauseChat}
   onmouseleave={unpauseChat}
   bind:this={container}
@@ -154,10 +146,10 @@
   {#each messages as message}
     <ChatMessage {message} />
   {/each}
+  {#if paused}
+    <PauseOverlay {newMessageCount} {unpauseChat} />
+  {/if}
 </div>
-{#if paused}
-  <PauseOverlay {newMessageCount} />
-{/if}
 
 <style lang="scss">
   #chat-container {
