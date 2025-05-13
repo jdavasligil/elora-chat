@@ -297,6 +297,15 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 		for {
 			select {
 			case m := <-messageChan:
+				var msg Message
+				err := json.Unmarshal(m, &msg)
+				if err != nil {
+					log.Println("json: ", err)
+				}
+				m, err = json.Marshal(msg)
+				if err != nil {
+					log.Println("json: ", err)
+				}
 				if err := conn.WriteMessage(websocket.TextMessage, m); err != nil {
 					log.Println("ws: WebSocket write error:", err)
 					return
