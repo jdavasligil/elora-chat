@@ -133,9 +133,9 @@ func InitRoutes(timeout time.Duration) {
 	if err != nil {
 		log.Printf("emodl: Failed to load third party emotes: %v", err)
 	}
-	tokenizer.EmoteCache = make(map[string]*Emote, len(emoteCacheTmp))
+	tokenizer.EmoteCache = make(map[string]Emote, len(emoteCacheTmp))
 	for name, emote := range emoteCacheTmp {
-		tokenizer.EmoteCache[name] = &Emote{
+		tokenizer.EmoteCache[name] = Emote{
 			ID:        emote.ID,
 			Name:      emote.Name,
 			Locations: emote.Locations,
@@ -209,7 +209,7 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 
 		// Add unknown emotes to the emote cache for tokenization
 		for _, e := range msg.Emotes {
-			tokenizer.EmoteCache[e.Name] = &e
+			tokenizer.EmoteCache[e.Name] = e
 		}
 
 		// Tokenize message

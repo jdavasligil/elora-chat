@@ -44,11 +44,11 @@ var TextColours = map[string]struct{}{
 type Token struct {
 	Type  string `json:"type"`
 	Text  string `json:"text"`
-	Emote *Emote `json:"emote"`
+	Emote Emote  `json:"emote"`
 }
 
 type Tokenizer struct {
-	EmoteCache map[string]*Emote
+	EmoteCache map[string]Emote
 }
 
 // ScanColon is a split function for a [Scanner] that returns text separated
@@ -91,7 +91,14 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 		return false, ""
 	}
 
-	tok := Token{Type: TokenTypeText, Text: word}
+	tok := Token{
+		Type: TokenTypeText,
+		Text: word,
+		Emote: Emote{
+			Locations: []string{},
+			Images:    []Image{},
+		},
+	}
 
 	// Base Case: Emote
 	if emote, ok := p.EmoteCache[word]; ok {
@@ -144,7 +151,13 @@ func (p Tokenizer) iterYoutube(yield func(Token) bool, word string, sb strings.B
 	scanner.Split(ScanColon)
 
 	// Iterate over potential emotes [:emote:] (scanning over colons)
-	tok := Token{Type: TokenTypeText}
+	tok := Token{
+		Type: TokenTypeText,
+		Emote: Emote{
+			Locations: []string{},
+			Images:    []Image{},
+		},
+	}
 	for scanner.Scan() {
 		text := scanner.Text()
 		// YouTube emote found
@@ -165,7 +178,10 @@ func (p Tokenizer) iterYoutube(yield func(Token) bool, word string, sb strings.B
 			sb.Reset()
 		} else {
 			tok.Type = TokenTypeText
-			tok.Emote = nil
+			tok.Emote = Emote{
+				Locations: []string{},
+				Images:    []Image{},
+			}
 			sb.WriteString(text)
 		}
 	}
@@ -197,7 +213,13 @@ func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 		// Scan last word for youtube emotes
 		sb = p.iterYoutube(yield, lastWord, sb)
 
-		tok := Token{Type: TokenTypeText}
+		tok := Token{
+			Type: TokenTypeText,
+			Emote: Emote{
+				Locations: []string{},
+				Images:    []Image{},
+			},
+		}
 
 		// Scan the rest of the message for emotes
 		for scanner.Scan() {
@@ -221,7 +243,10 @@ func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 				sb.Reset()
 			} else {
 				tok.Type = TokenTypeText
-				tok.Emote = nil
+				tok.Emote = Emote{
+					Locations: []string{},
+					Images:    []Image{},
+				}
 				sb = p.iterYoutube(yield, word, sb)
 			}
 		}
