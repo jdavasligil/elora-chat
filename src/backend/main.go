@@ -34,7 +34,7 @@ func main() {
 		port = "8080" // Default to port 8080 if not specified
 	}
 
-	routes.InitRoutes()
+	routes.InitRoutes(2 * time.Second)
 
 	r := mux.NewRouter()
 
