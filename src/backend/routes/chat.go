@@ -218,6 +218,14 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 			msg.Tokens = append(msg.Tokens, token)
 		}
 
+		// Prevent nil slices
+		if msg.Emotes == nil {
+			msg.Emotes = []Emote{}
+		}
+		if msg.Badges == nil {
+			msg.Badges = []Badge{}
+		}
+
 		// Re-marshal the message with the Source set.
 		modifiedMessage, err := json.Marshal(msg)
 		if err != nil {
@@ -312,6 +320,15 @@ func StreamChat(w http.ResponseWriter, r *http.Request) {
 				err := json.Unmarshal(m, &msg)
 				if err != nil {
 					log.Println("json: ", err)
+				}
+				if msg.Tokens == nil {
+					msg.Tokens = []Token{}
+				}
+				if msg.Emotes == nil {
+					msg.Emotes = []Emote{}
+				}
+				if msg.Badges == nil {
+					msg.Badges = []Badge{}
 				}
 				m, err = json.Marshal(msg)
 				if err != nil {
