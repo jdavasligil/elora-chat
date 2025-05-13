@@ -81,7 +81,9 @@ type Message struct {
 	Colour  string  `json:"colour"`
 }
 
-func InitRoutes() {
+func InitRoutes(timeout time.Duration) {
+	var err error
+
 	// Initialize the Redis client without TLS.
 	redisClient = redis.NewClient(&redis.Options{
 		Addr:            os.Getenv("REDIS_ADDR"),
@@ -97,9 +99,18 @@ func InitRoutes() {
 	ctx := context.Background()
 
 	// Check the Redis connection
-	_, err := redisClient.Ping(ctx).Result()
-	if err != nil {
-		log.Fatalf("redis: Failed to connect to Redis: %v", err)
+	_, err = redisClient.Ping(ctx).Result()
+
+	// Retry until timeout reached
+	retryTicker := time.NewTicker(100 * time.Millisecond)
+	timeoutTimer := time.NewTimer(timeout)
+	for err != nil {
+		select {
+		case <-retryTicker.C:
+			_, err = redisClient.Ping(ctx).Result()
+		case <-timeoutTimer.C:
+			log.Fatalf("redis: Failed to connect to Redis: %v", err)
+		}
 	}
 
 	// Load third party emotes
