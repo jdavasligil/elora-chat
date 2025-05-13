@@ -27,16 +27,6 @@
     }, 0);
   }
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'P' || e.key === 'p') {
-      if (paused) {
-        unpauseChat();
-      } else {
-        pauseChat();
-      }
-    }
-  });
-
   function processMessageQueue() {
     // console.log("Processing message queue", messageQueue);
     if (messageQueue.length === 0) {
@@ -125,6 +115,16 @@
 
   onMount(() => {
     initializeWebSocket();
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'P' || e.key === 'p') {
+        if (paused) {
+          unpauseChat();
+        } else {
+          pauseChat();
+        }
+      }
+    });
 
     window.addEventListener('beforeunload', () => {
       if (ws) {
