@@ -2,6 +2,7 @@
   import type { Message } from '$lib/types/messages';
   import { onMount } from 'svelte';
   import ChatMessage from './ChatMessage.svelte';
+  import PauseOverlay from './PauseOverlay.svelte';
 
   import { deployedUrl, useDeployedApi } from '$lib/config';
 
@@ -11,6 +12,30 @@
   const messageQueue: Message[] = $state([]);
   const messages: Message[] = $state([]);
   let processing = $state(false);
+  let paused = $state(false);
+  let newMessageCount = $state(0);
+
+  function pauseChat() {
+    paused = true;
+  }
+
+  function unpauseChat() {
+    paused = false;
+    setTimeout(() => {
+      container.scrollTop = container.scrollHeight;
+      newMessageCount = 0;
+    }, 0);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'P' || e.key === 'p') {
+      if (paused) {
+        unpauseChat();
+      } else {
+        pauseChat();
+      }
+    }
+  });
 
   function processMessageQueue() {
     // console.log("Processing message queue", messageQueue);
@@ -37,9 +62,14 @@
     messages.push(message);
 
     // Scroll to the bottom of the chat container
-    setTimeout(() => {
-      container.scrollTop = container.scrollHeight;
-    }, 0);
+    if (!paused) {
+      setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+        newMessageCount = 0;
+      }, 0);
+    } else {
+      newMessageCount++;
+    }
 
     // Continue processing after a delay
     setTimeout(processMessageQueue, 0); // Delay of x ms between messages
@@ -105,10 +135,20 @@
   });
 </script>
 
-<div id="chat-container" bind:this={container}>
+<div
+  id="chat-container"
+  aria-label="Chat messages"
+  role="list"
+  onmouseenter={pauseChat}
+  onmouseleave={unpauseChat}
+  bind:this={container}
+>
   {#each messages as message}
     <ChatMessage {message} />
   {/each}
+  {#if paused}
+    <PauseOverlay {newMessageCount} {unpauseChat} />
+  {/if}
 </div>
 
 <style lang="scss">
