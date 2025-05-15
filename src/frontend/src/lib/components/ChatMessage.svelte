@@ -88,9 +88,13 @@
 
     .emote-image {
       height: 28px;
-      width: 28px;
+      margin: 0px 0.2rem; /* top/bottom left/right */
 
       vertical-align: middle;
+    }
+
+    .message-text > img + img {
+      margin-left: 0px;
     }
   }
 
