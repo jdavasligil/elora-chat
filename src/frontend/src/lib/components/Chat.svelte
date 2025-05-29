@@ -15,6 +15,24 @@
   let paused = $state(false);
   let newMessageCount = $state(0);
 
+  function loadBlacklist(): {} {
+    const list = window.localStorage.getItem('blacklist');
+    if (!list) {
+      return {};
+    }
+    const parsedList = JSON.parse(list);
+    if (!parsedList || typeof parsedList !== 'object') {
+      return {};
+    }
+    return parsedList;
+  }
+
+  const blacklist: {} = $state(loadBlacklist());
+
+  function saveBlacklist() {
+    window.localStorage.setItem('blacklist', JSON.stringify(blacklist));
+  }
+
   function pauseChat() {
     paused = true;
   }
@@ -126,11 +144,16 @@
       }
     });
 
+    document.addEventListener('visibilitychange', () => {
+      saveBlacklist();
+    });
+
     window.addEventListener('beforeunload', () => {
       if (ws) {
         ws.close();
         ws = null;
       }
+      saveBlacklist();
     });
   });
 </script>
