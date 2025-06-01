@@ -1,15 +1,20 @@
 <script lang="ts">
   import { type Message } from '$lib/types/messages';
+  import type { SvelteSet } from 'svelte/reactivity';
+  import { getContext } from 'svelte';
   import { loadImage, formatMessageFragments } from '$lib/utils';
   import { TwitchIcon, YoutubeIcon } from './icons';
 
   let { message }: { message: Message } = $props();
   let visible = $state(true);
 
+  const blacklist: SvelteSet<string> = getContext('blacklist');
+
   const { messageWithHTML, effects } = formatMessageFragments(message.fragments);
 
   function toggleVisible() {
-    visible = !visible;
+    //visible = !visible;
+    blacklist.add(message.author);
   }
   function keyHandler(event: KeyboardEvent) {
     switch (event.key) {

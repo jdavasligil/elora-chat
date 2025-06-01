@@ -1,10 +1,11 @@
 <script lang="ts">
   import type { Message } from '$lib/types/messages';
-  import { onMount } from 'svelte';
+  import { onMount, setContext } from 'svelte';
   import ChatMessage from './ChatMessage.svelte';
   import PauseOverlay from './PauseOverlay.svelte';
 
   import { deployedUrl, useDeployedApi } from '$lib/config';
+  import { SvelteSet } from 'svelte/reactivity';
 
   let container: HTMLDivElement;
 
@@ -14,23 +15,24 @@
   let processing = $state(false);
   let paused = $state(false);
   let newMessageCount = $state(0);
+  let blacklist = loadBlacklist();
 
-  function loadBlacklist(): {} {
+  setContext('blacklist', blacklist);
+
+  function loadBlacklist(): SvelteSet<string> {
     const list = window.localStorage.getItem('blacklist');
     if (!list) {
-      return {};
+      return new SvelteSet();
     }
     const parsedList = JSON.parse(list);
-    if (!parsedList || typeof parsedList !== 'object') {
-      return {};
+    if (!parsedList) {
+      return new SvelteSet();
     }
-    return parsedList;
+    return new SvelteSet(parsedList);
   }
 
-  const blacklist: {} = $state(loadBlacklist());
-
   function saveBlacklist() {
-    window.localStorage.setItem('blacklist', JSON.stringify(blacklist));
+    window.localStorage.setItem('blacklist', JSON.stringify([...blacklist]));
   }
 
   function pauseChat() {
@@ -167,7 +169,9 @@
   bind:this={container}
 >
   {#each messages as message}
-    <ChatMessage {message} />
+    {#if !blacklist.has(message.author)}
+      <ChatMessage {message} />
+    {/if}
   {/each}
   {#if paused}
     <PauseOverlay {newMessageCount} {unpauseChat} />
