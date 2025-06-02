@@ -4,3 +4,4 @@ export { default as Footer } from './Footer.svelte';
 export { default as ChatMessage } from './ChatMessage.svelte';
 export { default as SendMessage } from './SendMessage.svelte';
 export { default as PauseOverlay } from './PauseOverlay.svelte';
+export { default as ChatSettings } from './ChatSettings.svelte';
