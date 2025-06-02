@@ -22,6 +22,12 @@
 <SendMessage />
 
 <style lang="scss">
+  :global(:root) {
+    --primary-color: #000000;
+    --secondary-color: #1c1c1c;
+    --accent-color: #282828;
+    --text-color: #cccccc;
+  }
   :global {
     * {
       box-sizing: border-box;

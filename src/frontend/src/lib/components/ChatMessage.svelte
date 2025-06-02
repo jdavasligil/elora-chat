@@ -17,7 +17,7 @@
     visible = !visible;
   }
   function blacklistAuthor() {
-    if (confirm(`Blacklist ${message.author}. Are you sure?`)) {
+    if (confirm(`Ban ${message.author}.\nThis is permanent. Are you sure?`)) {
       blacklist.add(message.author);
     }
     keymods.reset();
