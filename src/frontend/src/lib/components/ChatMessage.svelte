@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type Message } from '$lib/types/messages';
+  import type { Message, Keymods } from '$lib/types/messages';
   import type { SvelteSet } from 'svelte/reactivity';
   import { getContext } from 'svelte';
   import { loadImage, formatMessageFragments } from '$lib/utils';
@@ -9,12 +9,25 @@
   let visible = $state(true);
 
   const blacklist: SvelteSet<string> = getContext('blacklist');
+  const keymods: Keymods = getContext('keymods');
 
   const { messageWithHTML, effects } = formatMessageFragments(message.fragments);
 
   function toggleVisible() {
-    //visible = !visible;
-    blacklist.add(message.author);
+    visible = !visible;
+  }
+  function blacklistAuthor() {
+    if (confirm(`Blacklist ${message.author}. Are you sure?`)) {
+      blacklist.add(message.author);
+    }
+    keymods.reset();
+  }
+  function handleClickMessage() {
+    if (keymods.ctrl) {
+      blacklistAuthor();
+    } else {
+      toggleVisible();
+    }
   }
   function keyHandler(event: KeyboardEvent) {
     switch (event.key) {
@@ -31,7 +44,7 @@
   aria-pressed="false"
   tabindex="0"
   onkeypress={keyHandler}
-  onclick={toggleVisible}
+  onclick={handleClickMessage}
   class="chat-message"
 >
   <span class="sender">
