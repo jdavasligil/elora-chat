@@ -45,11 +45,8 @@
 <style lang="scss">
   #message-send-container {
     display: flex;
-    flex-shrink: 1;
+    flex-grow: 1;
     align-items: center;
-
-    margin: 10px 5px 0 5px;
-    padding-bottom: 10px;
   }
 
   #message-input {

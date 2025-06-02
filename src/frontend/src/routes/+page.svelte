@@ -1,6 +1,6 @@
 <script>
   import { checkLoginStatus } from '$lib/api/auth.svelte';
-  import { Chat, Header, SendMessage } from '$lib/components';
+  import { Chat, Header, Footer } from '$lib/components';
   import { onMount } from 'svelte';
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -19,7 +19,7 @@
   <Header />
 {/if}
 <Chat />
-<SendMessage />
+<Footer />
 
 <style lang="scss">
   :global(:root) {
