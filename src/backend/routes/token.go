@@ -18,11 +18,12 @@ const (
 const TextEffectSep = ":"
 
 var TextEffects = map[string]struct{}{
-	"wave":   {},
-	"wave2":  {},
-	"shake":  {},
-	"slide":  {},
-	"scroll": {},
+	"wave":    {},
+	"wave2":   {},
+	"shake":   {},
+	"slide":   {},
+	"scroll":  {},
+	"cheddar": {},
 }
 
 var TextColours = map[string]struct{}{

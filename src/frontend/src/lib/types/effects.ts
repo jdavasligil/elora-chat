@@ -19,5 +19,6 @@ export const enum TextEffect {
   Wave2 = 'wave2',
   Shake = 'shake',
   Slide = 'slide',
-  Scroll = 'scroll'
+  Scroll = 'scroll',
+  Cheddar = 'cheddar'
 }

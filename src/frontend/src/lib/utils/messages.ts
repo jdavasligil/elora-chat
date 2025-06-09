@@ -77,6 +77,7 @@ export function formatMessageFragments(fragments: Fragment[]): {
       case TextEffect.Wave:
       case TextEffect.Wave2:
       case TextEffect.Shake:
+      case TextEffect.Cheddar:
         handleSpanEffect();
         break;
       default:
