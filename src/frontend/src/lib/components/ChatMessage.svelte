@@ -264,6 +264,19 @@
       animation-delay: 0.9375s;
     }
 
+    .effect-cheddar span:nth-child(4n) {
+      color: #feddb0;
+    }
+    .effect-cheddar span:nth-child(4n + 1) {
+      color: #f8aa72;
+    }
+    .effect-cheddar span:nth-child(4n + 2) {
+      color: #ef965b;
+    }
+    .effect-cheddar span:nth-child(4n + 3) {
+      color: #fdc28d;
+    }
+
     .effect-shake {
       /* TODO: implement this */
       animation: wave 1s linear infinite;
