@@ -13,9 +13,11 @@ const (
 	TokenTypeColour  = "colour"
 	TokenTypeEffect  = "effect"
 	TokenTypePattern = "pattern"
+	TokenTypeCommand = "command"
 )
 
 const TextEffectSep = ":"
+const TextCommandPrefix = '!'
 
 var TextEffects = map[string]struct{}{
 	"wave":    {},
@@ -40,6 +42,10 @@ var TextColours = map[string]struct{}{
 	"glow2":   {},
 	"glow3":   {},
 	"rainbow": {},
+}
+
+var TextCommand = map[string]struct{}{
+	"color": {},
 }
 
 type Token struct {
@@ -198,12 +204,34 @@ func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 		scanner := bufio.NewScanner(strings.NewReader(s))
 		scanner.Split(bufio.ScanWords)
 
+		tok := Token{
+			Type: TokenTypeText,
+			Emote: Emote{
+				Locations: []string{},
+				Images:    []Image{},
+			},
+		}
+
 		ok := scanner.Scan()
 		if !ok {
 			return
 		}
 
 		word := scanner.Text()
+
+		// Check for command
+		// Exits early if command prefix is detected at start of string
+		if len(word) > 1 && word[0] == TextCommandPrefix {
+			command := word[1:]
+			if _, ok := TextCommand[command]; ok {
+				tok.Type = TokenTypeCommand
+				tok.Text = strings.TrimSpace(command + s[len(word):])
+			} else {
+				tok.Text = strings.TrimSpace(s)
+			}
+			yield(tok)
+			return
+		}
 
 		// Recursively tokenize text effects
 		stop, lastWord := p.iterWordEffect(yield, word, 0)
@@ -213,14 +241,6 @@ func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 
 		// Scan last word for youtube emotes
 		sb = p.iterYoutube(yield, lastWord, sb)
-
-		tok := Token{
-			Type: TokenTypeText,
-			Emote: Emote{
-				Locations: []string{},
-				Images:    []Image{},
-			},
-		}
 
 		// Scan the rest of the message for emotes
 		for scanner.Scan() {
