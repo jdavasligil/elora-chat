@@ -1,6 +1,22 @@
-import { TextEffect } from '$lib/types/effects';
+import { TextEffect, TextCommand } from '$lib/types/effects';
 import { FragmentType, type Emote, type Fragment } from '$lib/types/messages';
 import { buildApiUrl } from './misc';
+
+const validNameColors = new Map<string, string>([
+  ["red", "#d51f68"],
+  ["orange", "#f96708"],
+  ["yellow", "#fabd40"],
+  ["green", "#2ddd6a"],
+  ["lightblue", "#6ad7d6"],
+  ["blue", "#2bb5f3"],
+  ["violet", "#ba29e0"],
+  ["pink", "#e94079"],
+  ["tan", "#ebb369"],
+  ["olive", "#def169"],
+  ["lime", "#73df5c"],
+  ["sky", "#64d1fb"],
+  ["purple", "#8e73ef"],
+])
 
 export function sanitizeMessage(message: string): string {
   // replace < and > with HTML entities to prevent XSS attacks
@@ -32,10 +48,13 @@ function* fragmentGenerator(fragments: Fragment[]): Generator<Fragment, Fragment
 export function formatMessageFragments(fragments: Fragment[]): {
   messageWithHTML: string;
   effects: string;
+  userColor: string;
 } {
   const effectList: string[] = [];
   const messageList: string[] = [];
   const fragmentGen = fragmentGenerator(fragments);
+
+  let userColor = "";
 
   // Rule for handling text and emotes in the typical case
   function handleTextEmote() {
@@ -106,6 +125,27 @@ export function formatMessageFragments(fragments: Fragment[]): {
     }
   }
 
+  function handleColorCommand(opts: string[]) {
+    if (opts.length === 0) {
+      return;
+    }
+    const color = opts[0].toLowerCase();
+    const colorHex = validNameColors.get(color);
+    if (colorHex !== undefined) {
+      userColor = colorHex;
+    }
+  }
+
+  function handleCommand(commandString: string) {
+    const [cmd, ...opts] = commandString.split(" ");
+    switch (cmd) {
+      case TextCommand.Color:
+      case TextCommand.Colour:
+        handleColorCommand(opts);
+        break;
+    }
+  }
+
   // Top level entry point for recursive descent parsing
   function recursiveDescent() {
     const nextFrag = fragmentGen.next();
@@ -136,11 +176,14 @@ export function formatMessageFragments(fragments: Fragment[]): {
         // TODO: Handle custom patterns
         handleColor();
         break;
+      case FragmentType.Command:
+        handleCommand(fragment.text);
+        break;
     }
   }
 
   // Recursively generate the HTML message and gather styles
   recursiveDescent();
 
-  return { messageWithHTML: messageList.join(''), effects: effectList.join(' ') };
+  return { messageWithHTML: messageList.join(''), effects: effectList.join(' '), userColor };
 }

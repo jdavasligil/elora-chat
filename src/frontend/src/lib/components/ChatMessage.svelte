@@ -1,12 +1,18 @@
 <script lang="ts">
   import { type Message } from '$lib/types/messages';
   import { loadImage, formatMessageFragments } from '$lib/utils';
+  import type { SvelteMap } from 'svelte/reactivity';
   import { TwitchIcon, YoutubeIcon } from './icons';
 
-  let { message }: { message: Message } = $props();
+  let { message, usernameColors }: { message: Message; usernameColors: SvelteMap<string, string> } =
+    $props();
   let visible = $state(true);
 
-  const { messageWithHTML, effects } = formatMessageFragments(message.fragments);
+  const { messageWithHTML, effects, userColor } = formatMessageFragments(message.fragments);
+
+  if (userColor !== '') {
+    usernameColors.set(message.author, userColor);
+  }
 
   function toggleVisible() {
     visible = !visible;
@@ -21,47 +27,54 @@
   }
 </script>
 
-<div
-  role="button"
-  aria-pressed="false"
-  tabindex="0"
-  onkeypress={keyHandler}
-  onclick={toggleVisible}
-  class="chat-message"
->
-  <span class="sender">
-    {#if message.source === 'Twitch'}
-      <span title="Twitch">
-        <TwitchIcon class="badge-icon" alt="Twitch user" width={18} height={18} />
-      </span>
-    {:else if message.source === 'YouTube'}
-      <span title="YouTube">
-        <YoutubeIcon class="badge-icon" alt="YouTube user" width={18} height={18} />
+{#if messageWithHTML !== ''}
+  <div
+    role="button"
+    aria-pressed="false"
+    tabindex="0"
+    onkeypress={keyHandler}
+    onclick={toggleVisible}
+    class="chat-message"
+  >
+    <span class="sender">
+      {#if message.source === 'Twitch'}
+        <span title="Twitch">
+          <TwitchIcon class="badge-icon" alt="Twitch user" width={18} height={18} />
+        </span>
+      {:else if message.source === 'YouTube'}
+        <span title="YouTube">
+          <YoutubeIcon class="badge-icon" alt="YouTube user" width={18} height={18} />
+        </span>
+      {/if}
+
+      {#each message.badges as badge}
+        {#if badge.icons && badge.icons.length > 0}
+          <img
+            class="badge-icon"
+            src={loadImage(badge.icons[badge.icons.length - 1].url)}
+            title={badge.title}
+            alt={badge.title}
+          />
+        {/if}
+      {/each}
+      {#if usernameColors.has(message.author)}
+        <span class="message-username" style="color: {usernameColors.get(message.author)}">
+          {message.author}:
+        </span>
+      {:else}
+        <span class="message-username" style="color: {message.colour}">
+          {message.author}:
+        </span>
+      {/if}
+    </span>
+
+    {#if visible}
+      <span class={['message-text', effects].filter(Boolean).join(' ')}>
+        {@html messageWithHTML}
       </span>
     {/if}
-
-    {#each message.badges as badge}
-      {#if badge.icons && badge.icons.length > 0}
-        <img
-          class="badge-icon"
-          src={loadImage(badge.icons[badge.icons.length - 1].url)}
-          title={badge.title}
-          alt={badge.title}
-        />
-      {/if}
-    {/each}
-
-    <span class="message-username" style="color: {message.colour}">
-      {message.author}:
-    </span>
-  </span>
-
-  {#if visible}
-    <span class={['message-text', effects].filter(Boolean).join(' ')}>
-      {@html messageWithHTML}
-    </span>
-  {/if}
-</div>
+  </div>
+{/if}
 
 <style lang="scss">
   .chat-message {

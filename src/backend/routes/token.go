@@ -42,7 +42,8 @@ var TextColours = map[string]struct{}{
 }
 
 var TextCommand = map[string]struct{}{
-	"color": {},
+	"color":  {},
+	"colour": {},
 }
 
 type Token struct {

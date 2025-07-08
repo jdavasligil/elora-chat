@@ -5,12 +5,14 @@
   import PauseOverlay from './PauseOverlay.svelte';
 
   import { deployedUrl, useDeployedApi } from '$lib/config';
+  import { SvelteMap } from 'svelte/reactivity';
 
   let container: HTMLDivElement;
 
   let ws: WebSocket | null = $state(null);
   const messageQueue: Message[] = $state([]);
   const messages: Message[] = $state([]);
+  const usernameColors: SvelteMap<string, string> = new SvelteMap();
   let processing = $state(false);
   let paused = $state(false);
   let newMessageCount = $state(0);
@@ -144,7 +146,7 @@
   bind:this={container}
 >
   {#each messages as message}
-    <ChatMessage {message} />
+    <ChatMessage {message} {usernameColors} />
   {/each}
   {#if paused}
     <PauseOverlay {newMessageCount} {unpauseChat} />

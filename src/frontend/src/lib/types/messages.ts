@@ -25,7 +25,8 @@ export const enum FragmentType {
   Emote = 'emote',
   Colour = 'colour',
   Effect = 'effect',
-  Pattern = 'pattern'
+  Pattern = 'pattern',
+  Command = 'command'
 }
 
 export interface Fragment {
