@@ -41,6 +41,8 @@ func TestTokenizer(t *testing.T) {
 				Images: []Image{{URL: "https://cdn.test.net/v1/emotes/6/1x.webp"}},
 			},
 		},
+		TextEffectSep:     ':',
+		TextCommandPrefix: '!',
 	}
 	type Test struct {
 		Name     string
@@ -312,21 +314,21 @@ func TestTokenizer(t *testing.T) {
 	iterCommandTests := []Test{
 		{
 			Name:    "emptyCommand",
-			Message: string(TextCommandPrefix) + "  ",
+			Message: "!  ",
 			Expected: []Token{
-				{TokenTypeText, string(TextCommandPrefix), Emote{}},
+				{TokenTypeText, "!", Emote{}},
 			},
 		},
 		{
 			Name:    "invalidCommand",
-			Message: string(TextCommandPrefix) + "anInvalidCommand",
+			Message: "!anInvalidCommand",
 			Expected: []Token{
-				{TokenTypeText, string(TextCommandPrefix) + "anInvalidCommand", Emote{}},
+				{TokenTypeText, "!anInvalidCommand", Emote{}},
 			},
 		},
 		{
 			Name:    "colorCommand",
-			Message: string(TextCommandPrefix) + "color purple",
+			Message: "!color purple",
 			Expected: []Token{
 				{TokenTypeCommand, "color purple", Emote{}},
 			},
@@ -432,7 +434,7 @@ func TestScanColon(t *testing.T) {
 	for _, test := range tests {
 		t.Run("Scan-"+test.Name, func(t *testing.T) {
 			scanner := bufio.NewScanner(strings.NewReader(test.Message))
-			scanner.Split(ScanColon)
+			scanner.Split(ScanSeparator(':'))
 
 			i := 0
 			for scanner.Scan() {

@@ -16,9 +16,6 @@ const (
 	TokenTypeCommand = "command"
 )
 
-const TextEffectSep = ":"
-const TextCommandPrefix = '!'
-
 var TextEffects = map[string]struct{}{
 	"wave":    {},
 	"wave2":   {},
@@ -55,30 +52,34 @@ type Token struct {
 }
 
 type Tokenizer struct {
-	EmoteCache map[string]Emote
+	EmoteCache        map[string]Emote
+	TextEffectSep     byte
+	TextCommandPrefix byte
 }
 
-// ScanColon is a split function for a [Scanner] that returns text separated
-// by colons as a token (including surrounding colons).
-func ScanColon(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if atEOF && len(data) == 0 {
-		return 0, nil, nil
+// ScanSeparator returns a split function for a [Scanner] that returns text separated
+// by a separator byte as tokens (including surrounding separators).
+func ScanSeparator(sep byte) bufio.SplitFunc {
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if atEOF && len(data) == 0 {
+			return 0, nil, nil
+		}
+		// :: -> : (If double sep, jump to next sep)
+		if len(data) >= 2 && data[1] == sep {
+			return 1, data[:1], nil
+		}
+		// If we start with a sep, also include the final sep
+		offset := 0
+		if data[0] == sep {
+			offset = 1
+		}
+		end := bytes.Index(data[1:], []byte{sep}) + 1
+		// ending sep not found, just return the rest
+		if end <= 0 {
+			return len(data), data, nil
+		}
+		return end + offset, data[:end+offset], nil
 	}
-	// :: -> : (If double colon, jump to next colon)
-	if len(data) >= 2 && data[1] == ':' {
-		return 1, data[:1], nil
-	}
-	// If we start with a colon, also include the final colon
-	offset := 0
-	if data[0] == ':' {
-		offset = 1
-	}
-	end := bytes.Index(data[1:], []byte{':'}) + 1
-	// ending : not found, just return the rest
-	if end <= 0 {
-		return len(data), data, nil
-	}
-	return end + offset, data[:end+offset], nil
 }
 
 // Recursively check for the presence of colors and effects
@@ -119,7 +120,7 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 		return false, word
 	}
 
-	prefix, postfix, sepFound := strings.Cut(word, TextEffectSep)
+	prefix, postfix, sepFound := strings.Cut(word, string(p.TextEffectSep))
 
 	// No effects found, return word
 	if !sepFound || prefix == "" {
@@ -155,7 +156,7 @@ func (p Tokenizer) iterWordEffect(yield func(Token) bool, word string, depth int
 // Helper to iterate over YouTube style emotes
 func (p Tokenizer) iterYoutube(yield func(Token) bool, word string, sb strings.Builder) strings.Builder {
 	scanner := bufio.NewScanner(strings.NewReader(word))
-	scanner.Split(ScanColon)
+	scanner.Split(ScanSeparator(':'))
 
 	// Iterate over potential emotes [:emote:] (scanning over colons)
 	tok := Token{
@@ -221,7 +222,7 @@ func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 
 		// Check for command
 		// Exits early if command prefix is detected at start of string
-		if len(word) > 1 && word[0] == TextCommandPrefix {
+		if len(word) > 1 && word[0] == p.TextCommandPrefix {
 			command := word[1:]
 			if _, ok := TextCommand[command]; ok {
 				tok.Type = TokenTypeCommand

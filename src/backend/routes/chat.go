@@ -113,6 +113,10 @@ func InitRoutes(timeout time.Duration) {
 		}
 	}
 
+	// Initialize tokenizer
+	tokenizer.TextEffectSep = ':'
+	tokenizer.TextCommandPrefix = '!'
+
 	// Load third party emotes
 	downloader := emodl.NewDownloader(emodl.DownloaderOptions{
 		// TEMP: (Dayoman ID hard coded)
