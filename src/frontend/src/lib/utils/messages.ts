@@ -3,7 +3,7 @@ import { FragmentType, type Emote, type Fragment } from '$lib/types/messages';
 import { buildApiUrl } from './misc';
 
 export const validNameColors = new Map<string, string>([
-  ["red", "#d51f68"],
+  ["red", "#df5858"],
   ["orange", "#f96708"],
   ["yellow", "#fabd40"],
   ["green", "#2ddd6a"],
