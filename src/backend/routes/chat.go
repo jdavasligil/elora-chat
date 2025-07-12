@@ -49,6 +49,9 @@ var upgrader = websocket.Upgrader{
 
 var tokenizer Tokenizer
 
+// TODO: replace with table in SQLite
+var userColorMap map[string]string
+
 type Image struct {
 	URL    string `json:"url"`
 	Width  int    `json:"width"`
@@ -220,6 +223,20 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 		msg.Tokens = make([]Token, 0)
 		for token := range tokenizer.Iter(msg.Message) {
 			msg.Tokens = append(msg.Tokens, token)
+		}
+
+		// Process command
+		if len(msg.Tokens) > 0 && msg.Tokens[0].Type == TokenTypeCommand {
+			msg, err := ProcessCommand(msg, userColorMap)
+			if err != nil {
+				log.Printf("chat: Failed to process command: %v, Message: %#v\n", err, msg)
+			}
+		}
+
+		// Apply user preferences
+		// TODO: Replace map lookup with db query
+		if _, ok := userColorMap[msg.Author]; ok {
+			msg.Colour = userColorMap[msg.Author]
 		}
 
 		// Prevent nil slices
