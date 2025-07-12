@@ -1,17 +1,16 @@
 <script lang="ts">
   import { type Message } from '$lib/types/messages';
-  import { loadImage, formatMessageFragments } from '$lib/utils';
-  import type { SvelteMap } from 'svelte/reactivity';
+  import { loadImage, formatMessageFragments, validNameColors } from '$lib/utils';
   import { TwitchIcon, YoutubeIcon } from './icons';
 
-  let { message, usernameColors }: { message: Message; usernameColors: SvelteMap<string, string> } =
-    $props();
+  let { message }: { message: Message } = $props();
   let visible = $state(true);
 
-  const { messageWithHTML, effects, userColor } = formatMessageFragments(message.fragments);
+  const { messageWithHTML, effects } = formatMessageFragments(message.fragments);
 
-  if (userColor !== '') {
-    usernameColors.set(message.author, userColor);
+  const hexColour = validNameColors.get(message.colour);
+  if (hexColour != undefined) {
+    message.colour = hexColour;
   }
 
   function toggleVisible() {
@@ -57,15 +56,9 @@
           />
         {/if}
       {/each}
-      {#if usernameColors.has(message.author)}
-        <span class="message-username" style="color: {usernameColors.get(message.author)}">
-          {message.author}:
-        </span>
-      {:else}
-        <span class="message-username" style="color: {message.colour}">
-          {message.author}:
-        </span>
-      {/if}
+      <span class="message-username" style="color: {message.colour}">
+        {message.author}:
+      </span>
     </span>
 
     {#if visible}

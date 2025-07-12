@@ -22,8 +22,3 @@ export const enum TextEffect {
   Scroll = 'scroll',
   Cheddar = 'cheddar'
 }
-
-export const enum TextCommand {
-  Color = 'color',
-  Colour = 'colour',
-}

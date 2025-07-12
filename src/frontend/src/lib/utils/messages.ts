@@ -1,8 +1,8 @@
-import { TextEffect, TextCommand } from '$lib/types/effects';
+import { TextEffect } from '$lib/types/effects';
 import { FragmentType, type Emote, type Fragment } from '$lib/types/messages';
 import { buildApiUrl } from './misc';
 
-const validNameColors = new Map<string, string>([
+export const validNameColors = new Map<string, string>([
   ["red", "#d51f68"],
   ["orange", "#f96708"],
   ["yellow", "#fabd40"],
@@ -48,7 +48,6 @@ function* fragmentGenerator(fragments: Fragment[]): Generator<Fragment, Fragment
 export function formatMessageFragments(fragments: Fragment[]): {
   messageWithHTML: string;
   effects: string;
-  userColor: string;
 } {
   const effectList: string[] = [];
   const messageList: string[] = [];
@@ -125,27 +124,6 @@ export function formatMessageFragments(fragments: Fragment[]): {
     }
   }
 
-  function handleColorCommand(opts: string[]) {
-    if (opts.length === 0) {
-      return;
-    }
-    const color = opts[0].toLowerCase();
-    const colorHex = validNameColors.get(color);
-    if (colorHex !== undefined) {
-      userColor = colorHex;
-    }
-  }
-
-  function handleCommand(commandString: string) {
-    const [cmd, ...opts] = commandString.split(" ");
-    switch (cmd) {
-      case TextCommand.Color:
-      case TextCommand.Colour:
-        handleColorCommand(opts);
-        break;
-    }
-  }
-
   // Top level entry point for recursive descent parsing
   function recursiveDescent() {
     const nextFrag = fragmentGen.next();
@@ -176,14 +154,11 @@ export function formatMessageFragments(fragments: Fragment[]): {
         // TODO: Handle custom patterns
         handleColor();
         break;
-      case FragmentType.Command:
-        handleCommand(fragment.text);
-        break;
     }
   }
 
   // Recursively generate the HTML message and gather styles
   recursiveDescent();
 
-  return { messageWithHTML: messageList.join(''), effects: effectList.join(' '), userColor };
+  return { messageWithHTML: messageList.join(''), effects: effectList.join(' ') };
 }
