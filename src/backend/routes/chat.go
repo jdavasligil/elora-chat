@@ -50,7 +50,7 @@ var upgrader = websocket.Upgrader{
 var tokenizer Tokenizer
 
 // TODO: replace with table in SQLite
-var userColorMap map[string]string
+var userColorMap map[string]string = map[string]string{}
 
 type Image struct {
 	URL    string `json:"url"`
