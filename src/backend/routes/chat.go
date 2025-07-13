@@ -49,8 +49,10 @@ var upgrader = websocket.Upgrader{
 
 var tokenizer Tokenizer
 
+var commandParser CommandParser
+
 // TODO: replace with table in SQLite
-var userColorMap map[string]string = map[string]string{}
+var userColorMap map[string]string = make(map[string]string)
 
 type Image struct {
 	URL    string `json:"url"`
@@ -119,6 +121,13 @@ func InitRoutes(timeout time.Duration) {
 	// Initialize tokenizer
 	tokenizer.TextEffectSep = ':'
 	tokenizer.TextCommandPrefix = '!'
+
+	// Initialize command parser
+	// TODO: Replace hardcoded timer duration with config setting
+	commandParser = CommandParser{
+		HelpTimer:         time.NewTimer(10 * time.Second),
+		HelpResetDuration: 10 * time.Second,
+	}
 
 	// Load third party emotes
 	downloader := emodl.NewDownloader(emodl.DownloaderOptions{
@@ -203,6 +212,7 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		var msg Message
+		var err error
 		rawMessage := scanner.Bytes()
 		if err := json.Unmarshal(rawMessage, &msg); err != nil {
 			log.Printf("chat: Failed to unmarshal message: %v, Raw message: %s\n", err, string(rawMessage))
@@ -227,7 +237,7 @@ func processChatOutput(stdout io.ReadCloser, url string) {
 
 		// Process command
 		if len(msg.Tokens) > 0 && msg.Tokens[0].Type == TokenTypeCommand {
-			msg, err := ProcessCommand(msg, userColorMap)
+			msg, err = commandParser.Parse(msg, userColorMap)
 			if err != nil {
 				log.Printf("chat: Failed to process command: %v, Message: %#v\n", err, msg)
 			}

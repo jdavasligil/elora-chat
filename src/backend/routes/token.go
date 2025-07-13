@@ -41,11 +41,6 @@ var TextColours = map[string]struct{}{
 	"rainbow": {},
 }
 
-var TextCommand = map[string]struct{}{
-	"color":  {},
-	"colour": {},
-}
-
 type Token struct {
 	Type  string `json:"type"`
 	Text  string `json:"text"`
@@ -225,6 +220,9 @@ func (p Tokenizer) Iter(s string) iter.Seq[Token] {
 		// Exits early if command prefix is detected at start of string
 		if len(word) > 1 && word[0] == p.TextCommandPrefix {
 			command := word[1:]
+			if officialCommand, isAlias := TextCommandAlias[command]; isAlias {
+				command = officialCommand
+			}
 			if _, ok := TextCommand[command]; ok {
 				tok.Type = TokenTypeCommand
 				tok.Text = strings.TrimSpace(command + s[len(word):])
