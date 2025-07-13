@@ -53,8 +53,6 @@ export function formatMessageFragments(fragments: Fragment[]): {
   const messageList: string[] = [];
   const fragmentGen = fragmentGenerator(fragments);
 
-  let userColor = "";
-
   // Rule for handling text and emotes in the typical case
   function handleTextEmote() {
     const nextFrag = fragmentGen.next();
