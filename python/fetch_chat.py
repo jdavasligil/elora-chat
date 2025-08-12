@@ -42,7 +42,7 @@ def fetch_chat(url, message_groups=None):
                     author = message["author"]["display_name"]
                     color = message["colour"]
                 else:  # YouTube messages
-                    author = message["author"]["name"]
+                    author = message["author"]["name"][1:]
                     for badge in message["author"].get("badges", []):
                         title = badge["title"].lower()
                         if "owner" in title:
