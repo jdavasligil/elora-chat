@@ -4,6 +4,9 @@ import sys
 import datetime
 
 
+valid_username_symbols = {'_', '-', '.', '·'}
+
+
 def delete_older_than(seconds: float, dic: dict[str, float]):
     cutoff = datetime.datetime.now().timestamp() - seconds
     old_ids = []
@@ -42,7 +45,8 @@ def fetch_chat(url, message_groups=None):
                     author = message["author"]["display_name"]
                     color = message["colour"]
                 else:  # YouTube messages
-                    author = message["author"]["name"][1:]
+                    author = message["author"]["name"]
+                    author = "".join([c for c in author if c.isalnum() or c in valid_username_symbols])
                     for badge in message["author"].get("badges", []):
                         title = badge["title"].lower()
                         if "owner" in title:
